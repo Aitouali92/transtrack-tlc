@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="theme-color" content="#0f1923"/>
+<title>Rapport Matin — TLC Roncq</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font-family:'Outfit',sans-serif;background:#f0ede8;color:#0f1923;padding-bottom:100px;}
+
+.hdr{background:#0f1923;color:#fff;padding:14px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;}
+.hdr-logo{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#f5a623,#f97316);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.hdr-back{margin-left:auto;background:rgba(255,255,255,.1);border:none;color:#fff;border-radius:8px;padding:6px 12px;font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;cursor:pointer;}
+
+.scroll{padding:16px;}
+.stitle{font-size:20px;font-weight:900;letter-spacing:-1px;margin-bottom:3px;}
+.ssub{font-size:12px;color:#8a8278;margin-bottom:16px;}
+
+.card{background:#fff;border-radius:16px;border:1px solid #e2ddd6;padding:16px;margin-bottom:12px;box-shadow:0 2px 10px rgba(0,0,0,.05);}
+.card-title{font-weight:800;font-size:14px;margin-bottom:12px;display:flex;align-items:center;gap:7px;}
+.fl{display:block;font-size:12px;font-weight:700;color:#555;margin-bottom:5px;}
+.fc{width:100%;border:1.5px solid #e2ddd6;border-radius:11px;padding:10px 12px;font-family:'Outfit',sans-serif;font-size:13px;background:#f8f7f5;outline:none;-webkit-appearance:none;}
+textarea.fc{resize:vertical;min-height:60px;}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.fg{margin-bottom:12px;}
+
+/* TOGGLE BUTTONS */
+.tog-row{display:flex;gap:8px;margin-bottom:12px;}
+.tog{flex:1;padding:9px;border-radius:10px;border:2px solid #e2ddd6;background:#f0ede8;color:#8a8278;font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;text-align:center;}
+.tog.on-ok{border-color:#22c55e;background:#dcfce7;color:#15803d;}
+.tog.on-err{border-color:#ef4444;background:#fee2e2;color:#dc2626;}
+.tog.on-warn{border-color:#f5a623;background:#fef3c7;color:#92400e;}
+
+/* CHIPS */
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px;}
+.chip{padding:6px 12px;border-radius:20px;border:1.5px solid #e2ddd6;background:#f0ede8;color:#666;font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;}
+.chip.on-ok{border-color:#22c55e;background:#dcfce7;color:#15803d;}
+.chip.on-warn{border-color:#f5a623;background:#fef3c7;color:#92400e;}
+.chip.on-err{border-color:#ef4444;background:#fee2e2;color:#dc2626;}
+
+/* CONSIGNE ROW */
+.cons-row{display:flex;align-items:flex-start;gap:8px;margin-bottom:10px;}
+.cons-num{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0;margin-top:10px;}
+
+/* BUTTONS */
+.btn{width:100%;padding:13px;border-radius:13px;border:none;font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:10px;}
+.btn-night{background:linear-gradient(135deg,#0f1923,#1a2535);color:#fff;}
+.btn-blue{background:linear-gradient(135deg,#3b9eff,#1d6dbf);color:#fff;}
+.btn-green{background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;}
+.btn-row{display:flex;gap:8px;}
+
+/* APERÇU */
+#apercu{display:none;margin-top:16px;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.12);}
+
+/* BOTTOM NAV */
+.bnav{position:fixed;bottom:0;left:0;right:0;background:#0f1923;display:flex;gap:0;z-index:200;padding-bottom:env(safe-area-inset-bottom);border-top:1px solid rgba(255,255,255,.07);}
+.bnav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 0 8px;border:none;background:transparent;color:rgba(255,255,255,.4);font-family:'Outfit',sans-serif;font-size:9px;font-weight:600;cursor:pointer;gap:4px;text-transform:uppercase;}
+.bnav-btn .ico{font-size:18px;}
+.bnav-btn.on{color:#f5a623;}
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <div class="hdr-logo">📋</div>
+  <div>
+    <div style="font-size:15px;font-weight:800">Rapport Matin</div>
+    <div style="font-size:10px;opacity:.4;text-transform:uppercase;letter-spacing:1px">TLC Services — Roncq</div>
+  </div>
+  <button class="hdr-back" onclick="window.location.href='/'">← App</button>
+</header>
+
+<div class="scroll">
+  <div class="stitle" id="page-date"></div>
+  <div class="ssub">Créneau : Matin</div>
+
+  <!-- DÉPARTS -->
+  <div class="card">
+    <div class="card-title">🚛 Départs chauffeurs</div>
+    <div class="frow" style="margin-bottom:12px">
+      <div class="fg"><label class="fl">Heure GOFO</label><input class="fc" id="rm-gofo" value="8h00"/></div>
+      <div class="fg"><label class="fl">Heure VINTED</label><input class="fc" id="rm-vinted" value="9h45"/></div>
+    </div>
+    <label class="fl">Tournées récupérées</label>
+    <div class="tog-row">
+      <button class="tog on-ok" id="t-tournees-oui" onclick="tog2('tournees','oui','non','ok','err')">✅ OUI</button>
+      <button class="tog" id="t-tournees-non" onclick="tog2('tournees','non','oui','err','ok')">❌ NON</button>
+    </div>
+    <label class="fl">Départs effectués</label>
+    <div class="tog-row">
+      <button class="tog on-ok" id="t-departs-oui" onclick="tog2('departs','oui','non','ok','err')">✅ OUI</button>
+      <button class="tog" id="t-departs-non" onclick="tog2('departs','non','oui','err','ok')">❌ NON</button>
+    </div>
+  </div>
+
+  <!-- NETTOYAGE -->
+  <div class="card">
+    <div class="card-title">🧹 Nettoyage & Rangement</div>
+    <div class="chips">
+      <button class="chip" id="c-depot-ok"     onclick="togChip(this,'ok')">✅ Dépôt OK</button>
+      <button class="chip" id="c-bureau-ok"    onclick="togChip(this,'ok')">✅ Bureau OK</button>
+      <button class="chip" id="c-cartons-ok"   onclick="togChip(this,'ok')">✅ Cartons évacués</button>
+      <button class="chip" id="c-cartons-rng"  onclick="togChip(this,'warn')">⚠ Cartons rangés</button>
+      <button class="chip" id="c-palettes-rng" onclick="togChip(this,'warn')">⚠ Palettes rangées</button>
+      <button class="chip" id="c-bennes-full"  onclick="togChip(this,'err')">🔴 Bennes pleines</button>
+    </div>
+    <label class="fl">Note nettoyage</label>
+    <textarea class="fc" id="rm-nettoyage-note" placeholder="Ex: Demande benne à effectuer…"></textarea>
+  </div>
+
+  <!-- FLUX -->
+  <div class="card">
+    <div class="card-title">⚙️ Flux & Organisation</div>
+    <label class="fl">Routes sorties</label>
+    <div class="tog-row">
+      <button class="tog on-ok" id="t-routes-ok" onclick="tog2('routes','ok','pb','ok','err')">✅ Toutes sorties</button>
+      <button class="tog" id="t-routes-pb" onclick="tog2('routes','pb','ok','err','ok')">⚠ Problème</button>
+    </div>
+    <div class="frow">
+      <div>
+        <label class="fl">GOFO</label>
+        <div class="tog-row">
+          <button class="tog on-ok" id="t-gofo-ok" onclick="tog2('gofo','ok','pb','ok','err')">✅ RAS</button>
+          <button class="tog" id="t-gofo-pb" onclick="tog2('gofo','pb','ok','err','ok')">⚠ PB</button>
+        </div>
+        <textarea class="fc" id="rm-gofo-note" placeholder="Détails GOFO…" style="min-height:50px"></textarea>
+      </div>
+      <div>
+        <label class="fl">VINTED</label>
+        <div class="tog-row">
+          <button class="tog on-ok" id="t-vinted-ok" onclick="tog2('vinted','ok','pb','ok','err')">✅ RAS</button>
+          <button class="tog" id="t-vinted-pb" onclick="tog2('vinted','pb','ok','err','ok')">⚠ PB</button>
+        </div>
+        <textarea class="fc" id="rm-vinted-note" placeholder="Détails VINTED…" style="min-height:50px"></textarea>
+      </div>
+    </div>
+    <label class="fl">Infos complémentaires</label>
+    <textarea class="fc" id="rm-flux-note" placeholder="Réorganisation, remplacement…"></textarea>
+  </div>
+
+  <!-- ÉCARTS -->
+  <div class="card">
+    <div class="card-title">🚨 Écarts / Problèmes</div>
+    <label class="fl">Matériel de manutention</label>
+    <div class="chips">
+      <button class="chip on-ok" id="c-tp-m-ok"  onclick="togChipExcl(this,'c-tp-m-abs','ok')">✅ Transpalette manuel OK</button>
+      <button class="chip"       id="c-tp-m-abs" onclick="togChipExcl(this,'c-tp-m-ok','err')">❌ Transpalette ABSENT</button>
+      <button class="chip on-ok" id="c-tp-e-ok"  onclick="togChipExcl(this,'c-tp-e-pb','ok')">✅ Transpalette élec. OK</button>
+      <button class="chip"       id="c-tp-e-pb"  onclick="togChipExcl(this,'c-tp-e-ok','warn')">⚠ Transpalette défectueux</button>
+    </div>
+    <label class="fl">Autres écarts</label>
+    <textarea class="fc" id="rm-ecarts-note" placeholder="Incidents, problèmes…"></textarea>
+  </div>
+
+  <!-- REMARQUES -->
+  <div class="card">
+    <div class="card-title">💬 Remarques</div>
+    <textarea class="fc" id="rm-remarques" placeholder="Remarques générales, points d'attention…" style="min-height:80px"></textarea>
+  </div>
+
+  <!-- BESOINS -->
+  <div class="card">
+    <div class="card-title">🛒 Besoins</div>
+    <div class="chips">
+      <button class="chip" id="c-savon"  onclick="togChip(this,'ok')">🧴 Savon mains</button>
+      <button class="chip" id="c-papier" onclick="togChip(this,'ok')">🧻 Papier WC</button>
+      <button class="chip" id="c-scotch" onclick="togChip(this,'ok')">🎁 Scotch gris</button>
+      <button class="chip" id="c-produit"onclick="togChip(this,'ok')">🧹 Produit WC</button>
+      <button class="chip" id="c-gants"  onclick="togChip(this,'ok')">🧤 Gants</button>
+    </div>
+    <input class="fc" id="rm-besoins-autres" placeholder="Autres besoins…"/>
+  </div>
+
+  <!-- CONSIGNES QUAI -->
+  <div class="card">
+    <div class="card-title">📋 Consignes Agent de Quai après-midi</div>
+    ${[
+      {i:1,c:'#3b9eff',v:'Vérifier la fonctionnalité des téléphones récupérés'},
+      {i:2,c:'#22c55e',v:'Vérifier systématiquement le gazole de tous les véhicules'},
+      {i:3,c:'#a78bfa',v:'Récupérer l\'ensemble des clés des véhicules au retour des chauffeurs'},
+      {i:4,c:'#f5a623',v:'Vérifier l\'état général des véhicules (carrosserie, pneus, voyants, dégâts éventuels)'},
+      {i:5,c:'#ec4899',v:'Rappeler aux chauffeurs de mettre fin à leurs tournées'},
+      {i:6,c:'#14b8a6',v:'Charger les cages au maximum afin d\'en économiser pour le lendemain'},
+      {i:7,c:'#ef4444',v:'Veiller au respect strict du port des EPI par toute personne entrant dans l\'entrepôt'},
+    ].map(x=>`<div class="cons-row">
+      <div class="cons-num" style="background:${x.c}">${x.i}</div>
+      <textarea class="fc" id="rm-c${x.i}" style="min-height:45px;margin-bottom:0">${x.v}</textarea>
+    </div>`).join('')}
+  </div>
+
+  <!-- RAPPEL & OBJECTIF -->
+  <div class="card">
+    <div class="card-title">🎯 Rappel & Objectif</div>
+    <label class="fl">Rappel</label>
+    <textarea class="fc" id="rm-rappel" style="min-height:60px">Organisation maintenue, vigilance sur le tri et le rangement. Communication et rigueur sont essentielles pour la fluidité des opérations !</textarea>
+    <label class="fl" style="margin-top:10px">Objectif</label>
+    <input class="fc" id="rm-objectif" value="Ensemble, assurons la sécurité, la qualité et la performance !"/>
+  </div>
+
+  <!-- BOUTONS -->
+  <button class="btn btn-night" onclick="genApercu()">👁 Générer l'aperçu</button>
+  <div class="btn-row">
+    <button class="btn btn-blue" onclick="exportPNG()" style="flex:1">📸 PNG</button>
+    <button class="btn btn-green" onclick="exportWA()" style="flex:1">💬 WhatsApp</button>
+  </div>
+
+  <!-- APERÇU -->
+  <div id="apercu"></div>
+</div>
+
+<nav class="bnav">
+  <button class="bnav-btn on"><span class="ico">📋</span>Rapport</button>
+  <button class="bnav-btn" onclick="window.location.href='/'"><span class="ico">📊</span>Accueil</button>
+</nav>
+
+<script>
+// Date
+(function(){
+  const d=new Date();
+  const days=['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+  document.getElementById('page-date').textContent=days[d.getDay()]+' '+d.toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});
+})();
+
+// TOGGLES
+function tog2(prefix,a,b,clsA,clsB){
+  const ea=document.getElementById('t-'+prefix+'-'+a);
+  const eb=document.getElementById('t-'+prefix+'-'+b);
+  if(!ea||!eb)return;
+  const wasOn=ea.classList.contains('on-'+clsA);
+  ea.className='tog'+(wasOn?'':' on-'+clsA);
+  eb.className='tog';
+}
+function togChip(el,cls){
+  const was=el.classList.contains('on-'+cls);
+  el.className='chip'+(was?'':' on-'+cls);
+}
+function togChipExcl(el,otherId,cls){
+  const other=document.getElementById(otherId);
+  const was=el.classList.contains('on-ok')||el.classList.contains('on-warn')||el.classList.contains('on-err');
+  if(was){el.className='chip';}
+  else{el.className='chip on-'+cls;if(other)other.className='chip';}
+}
+
+function isOn(id){const el=document.getElementById(id);return el&&(el.classList.contains('on-ok')||el.classList.contains('on-warn')||el.classList.contains('on-err'));}
+function isOk(id){const el=document.getElementById(id);return el&&el.classList.contains('on-ok');}
+function isErr(id){const el=document.getElementById(id);return el&&el.classList.contains('on-err');}
+function isWarn(id){const el=document.getElementById(id);return el&&el.classList.contains('on-warn');}
+function v(id){return document.getElementById(id)?.value||'';}
+
+function rmItem(type,text){
+  const cfg={ok:{bg:'#dcfce7',c:'#15803d',ico:'✓'},warn:{bg:'#fef3c7',c:'#92400e',ico:'⚠'},err:{bg:'#fee2e2',c:'#dc2626',ico:'✗'},arrow:{bg:'#ffedd5',c:'#c2410c',ico:'→'}};
+  const s=cfg[type]||cfg.ok;
+  return`<div style="display:flex;align-items:flex-start;gap:7px;margin-bottom:8px;font-size:12px;line-height:1.4">
+    <div style="width:18px;height:18px;border-radius:50%;background:${s.bg};color:${s.c};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;margin-top:1px">${s.ico}</div>
+    <div>${text}</div></div>`;
+}
+
+function nowStr(){
+  const d=new Date();
+  const days=['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+  return`${days[d.getDay()]} ${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getFullYear()}`;
+}
+
+function buildHTML(){
+  const gofo=v('rm-gofo')||'—';const vinted=v('rm-vinted')||'—';
+  const tourOk=isOk('t-tournees-oui');const depOk=isOk('t-departs-oui');
+
+  // Nettoyage
+  const nItems=[];
+  if(isOn('c-depot-ok'))    nItems.push(rmItem('ok','Dépôt : OK'));
+  if(isOn('c-bureau-ok'))   nItems.push(rmItem('ok','Bureau : OK'));
+  if(isOn('c-cartons-ok'))  nItems.push(rmItem('ok','Cartons évacués'));
+  if(isOn('c-cartons-rng')) nItems.push(rmItem('warn','Cartons rangés (non évacués)'));
+  if(isOn('c-palettes-rng'))nItems.push(rmItem('warn','Palettes rangées'));
+  if(isOn('c-bennes-full')) nItems.push(rmItem('err','Bennes pleines — demande à effectuer'));
+  const netNote=v('rm-nettoyage-note');if(netNote)nItems.push(rmItem('arrow',netNote));
+
+  // Besoins
+  const besoins=[];
+  if(isOn('c-savon'))  besoins.push(rmItem('arrow','Savon mains'));
+  if(isOn('c-papier')) besoins.push(rmItem('arrow','Papier WC'));
+  if(isOn('c-scotch')) besoins.push(rmItem('arrow','Scotch gris'));
+  if(isOn('c-produit'))besoins.push(rmItem('arrow','Produit WC'));
+  if(isOn('c-gants'))  besoins.push(rmItem('arrow','Gants'));
+  const autB=v('rm-besoins-autres');if(autB)besoins.push(rmItem('arrow',autB));
+
+  // Consignes
+  const colors=['#3b9eff','#22c55e','#a78bfa','#f5a623','#ec4899','#14b8a6','#ef4444'];
+  let consHTML='';
+  for(let i=1;i<=7;i++){const t=v('rm-c'+i);if(t)consHTML+=`<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px"><div style="width:22px;height:22px;border-radius:50%;background:${colors[i-1]};color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0">${i}</div><div style="font-size:11px;color:rgba(255,255,255,.85);line-height:1.4;flex:1">${t}</div></div>`;}
+
+  const remarques=v('rm-remarques');
+  const fluxNote=v('rm-flux-note');
+  const gofoNote=v('rm-gofo-note');
+  const vintedNote=v('rm-vinted-note');
+  const ecartsNote=v('rm-ecarts-note');
+  const rappel=v('rm-rappel');
+  const objectif=v('rm-objectif');
+
+  return`<div style="width:100%;background:#fff;font-family:'Outfit',sans-serif;border-radius:12px;overflow:hidden">
+  <div style="background:#1a2535;color:#fff;padding:20px;text-align:center">
+    <div style="font-size:26px;font-weight:900;letter-spacing:-1px">📋 RAPPORT MATIN</div>
+    <div style="display:inline-block;background:rgba(245,166,35,.2);border:1px solid #f5a623;color:#f5a623;padding:4px 14px;border-radius:20px;font-size:12px;font-weight:700;margin-top:8px">${nowStr()} — Créneau : Matin</div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr">
+    <div style="padding:14px;border:1px solid #e8e4de">
+      <div style="font-size:11px;font-weight:800;color:#1a4fa0;text-transform:uppercase;border-bottom:2px solid #1a4fa0;padding-bottom:7px;margin-bottom:10px">🚛 DÉPARTS CHAUFFEURS</div>
+      ${rmItem(tourOk?'ok':'err','Tournées récupérées : '+(tourOk?'OUI':'NON'))}
+      ${rmItem(depOk?'ok':'err','Départs effectués : '+(depOk?'OUI':'NON'))}
+      <div style="margin-top:10px">
+        <div style="display:inline-flex;align-items:center;gap:6px;background:#dbeafe;color:#1d4ed8;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;margin-bottom:5px">🕐 GOFO : ${gofo}</div><br/>
+        <div style="display:inline-flex;align-items:center;gap:6px;background:#fee2e2;color:#dc2626;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700">🕐 VINTED : ${vinted}</div>
+      </div>
+    </div>
+    <div style="padding:14px;border:1px solid #e8e4de">
+      <div style="font-size:11px;font-weight:800;color:#15803d;text-transform:uppercase;border-bottom:2px solid #22c55e;padding-bottom:7px;margin-bottom:10px">🧹 NETTOYAGE & RANGEMENT</div>
+      ${nItems.join('')||rmItem('ok','RAS')}
+    </div>
+    <div style="padding:14px;border:1px solid #e8e4de">
+      <div style="font-size:11px;font-weight:800;color:#6d28d9;text-transform:uppercase;border-bottom:2px solid #a78bfa;padding-bottom:7px;margin-bottom:10px">⚙️ FLUX & ORGANISATION</div>
+      ${rmItem(isOk('t-routes-ok')?'ok':'err',isOk('t-routes-ok')?'Toutes les routes prévues sont sorties.':'⚠ Problème sur les routes')}
+      <div style="margin-top:6px"><strong style="font-size:10px;color:#6d28d9">GOFO :</strong>${rmItem(isOk('t-gofo-ok')?'ok':'err',isOk('t-gofo-ok')?'RAS':(gofoNote||'Problème'))}</div>
+      <div><strong style="font-size:10px;color:#dc2626">VINTED :</strong>${rmItem(isOk('t-vinted-ok')?'ok':'err',isOk('t-vinted-ok')?'RAS':(vintedNote||'Problème'))}</div>
+      ${fluxNote?rmItem('arrow',fluxNote):''}
+    </div>
+    <div style="padding:14px;border:1px solid #e8e4de">
+      <div style="font-size:11px;font-weight:800;color:#dc2626;text-transform:uppercase;border-bottom:2px solid #ef4444;padding-bottom:7px;margin-bottom:10px">⚠️ ÉCARTS / PROBLÈMES</div>
+      <div style="color:#dc2626;font-weight:700;font-size:10px;margin-bottom:6px">Matériel de manutention :</div>
+      ${rmItem(isErr('c-tp-m-abs')?'err':'ok','Transpalette manuel : '+(isErr('c-tp-m-abs')?'<strong style="color:#dc2626">ABSENT</strong>':'OK'))}
+      ${rmItem(isWarn('c-tp-e-pb')?'warn':'ok','Transpalette électrique : '+(isWarn('c-tp-e-pb')?'Défectueux':'OK'))}
+      ${ecartsNote?rmItem('err',ecartsNote):''}
+    </div>
+    <div style="padding:14px;border:1px solid #e8e4de">
+      <div style="font-size:11px;font-weight:800;color:#c2410c;text-transform:uppercase;border-bottom:2px solid #f97316;padding-bottom:7px;margin-bottom:10px">💬 REMARQUES</div>
+      ${remarques?remarques.split('\n').filter(l=>l.trim()).map(l=>rmItem(l.startsWith('!')?'err':l.startsWith('⚠')?'warn':'ok',l.replace(/^[!⚠✅]/,'').trim())).join(''):rmItem('ok','Aucune remarque particulière.')}
+    </div>
+    <div style="padding:14px;border:1px solid #e8e4de">
+      <div style="font-size:11px;font-weight:800;color:#0369a1;text-transform:uppercase;border-bottom:2px solid #3b9eff;padding-bottom:7px;margin-bottom:10px">🛒 BESOINS</div>
+      ${besoins.join('')||rmItem('ok','Aucun besoin signalé')}
+    </div>
+  </div>
+  <div style="background:#1a2535;padding:14px 18px">
+    <div style="color:#f5a623;font-weight:800;font-size:12px;text-transform:uppercase;margin-bottom:12px">📋 CONSIGNES AGENT DE QUAI APRÈS-MIDI</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${consHTML}</div>
+  </div>
+  <div style="background:#f8f7f5;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;border-top:2px solid #e2ddd6">
+    <div style="background:#dcfce7;border:1px solid #bbf7d0;border-radius:9px;padding:10px 12px;font-size:10px;color:#15803d;max-width:200px;line-height:1.5"><strong style="display:block;font-size:11px;margin-bottom:2px">🛡 RAPPEL</strong>${rappel}</div>
+    <div style="text-align:center"><div style="font-size:10px;color:#8a8278;margin-bottom:3px">Rapport rédigé par :</div><div style="font-size:14px;font-weight:800;font-style:italic">Ait Ouali Omar</div></div>
+    <div style="background:#fef3c7;border:1px solid #f5a623;border-radius:9px;padding:10px 12px;font-size:10px;color:#92400e;max-width:170px;text-align:center"><div style="font-size:16px;margin-bottom:2px">🎯</div><strong style="display:block;font-size:11px">OBJECTIF</strong>${objectif}</div>
+  </div>
+</div>`;
+}
+
+window.genApercu=function(){
+  const a=document.getElementById('apercu');
+  a.style.display='block';
+  a.innerHTML=buildHTML();
+  a.scrollIntoView({behavior:'smooth'});
+  toast('✅ Aperçu généré !');
+};
+
+window.exportPNG=function(){
+  genApercu();
+  setTimeout(()=>{
+    const a=document.getElementById('apercu');
+    html2canvas(a,{scale:2,backgroundColor:'#ffffff',useCORS:true,logging:false}).then(canvas=>{
+      const link=document.createElement('a');
+      const d=new Date();
+      link.download=`Rapport_Matin_${d.getDate().toString().padStart(2,'0')}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getFullYear()}.png`;
+      link.href=canvas.toDataURL('image/png');
+      link.click();
+      toast('✅ PNG téléchargé !');
+    }).catch(()=>toast('⚠ Erreur export PNG'));
+  },400);
+};
+
+window.exportWA=function(){
+  const gofo=v('rm-gofo')||'—';const vinted=v('rm-vinted')||'—';
+  const tourOk=isOk('t-tournees-oui');const depOk=isOk('t-departs-oui');
+  const nItems=[];
+  if(isOn('c-depot-ok'))    nItems.push('✅ Dépôt : OK');
+  if(isOn('c-bureau-ok'))   nItems.push('✅ Bureau : OK');
+  if(isOn('c-cartons-ok'))  nItems.push('✅ Cartons évacués');
+  if(isOn('c-cartons-rng')) nItems.push('⚠ Cartons rangés');
+  if(isOn('c-palettes-rng'))nItems.push('⚠ Palettes rangées');
+  if(isOn('c-bennes-full')) nItems.push('🔴 Bennes pleines');
+  const netNote=v('rm-nettoyage-note');if(netNote)nItems.push('→ '+netNote);
+  const besoins=[];
+  if(isOn('c-savon'))  besoins.push('Savon mains');
+  if(isOn('c-papier')) besoins.push('Papier WC');
+  if(isOn('c-scotch')) besoins.push('Scotch gris');
+  if(isOn('c-produit'))besoins.push('Produit WC');
+  if(isOn('c-gants'))  besoins.push('Gants');
+  const autB=v('rm-besoins-autres');if(autB)besoins.push(autB);
+
+  let txt=`📋 *RAPPORT MATIN — ${nowStr()}*\nTLC Services — Agence de Roncq\n${'─'.repeat(34)}\n\n🚛 *DÉPARTS CHAUFFEURS*\n${tourOk?'✅':'❌'} Tournées récupérées : ${tourOk?'OUI':'NON'}\n${depOk?'✅':'❌'} Départs effectués : ${depOk?'OUI':'NON'}\n🕐 GOFO : *${gofo}*\n🕐 VINTED : *${vinted}*\n\n🧹 *NETTOYAGE & RANGEMENT*\n${nItems.join('\n')||'✅ RAS'}\n\n⚙️ *FLUX & ORGANISATION*\n${isOk('t-routes-ok')?'✅ Toutes les routes sont sorties':'⚠ Problème routes'}\n• GOFO : ${isOk('t-gofo-ok')?'✅ RAS':(v('rm-gofo-note')||'⚠ Problème')}\n• VINTED : ${isOk('t-vinted-ok')?'✅ RAS':(v('rm-vinted-note')||'⚠ Problème')}\n${v('rm-flux-note')?'→ '+v('rm-flux-note'):''}\n\n🚨 *ÉCARTS / PROBLÈMES*\n• Transpalette manuel : ${isErr('c-tp-m-abs')?'❌ ABSENT':'✅ OK'}\n• Transpalette élec. : ${isWarn('c-tp-e-pb')?'⚠ Défectueux':'✅ OK'}\n${v('rm-ecarts-note')?'→ '+v('rm-ecarts-note'):''}\n\n💬 *REMARQUES*\n${v('rm-remarques')||'Aucune remarque.'}\n\n🛒 *BESOINS*\n${besoins.length?besoins.map(b=>'• '+b).join('\n'):'Aucun besoin.'}\n${'─'.repeat(34)}\n📋 *CONSIGNES AGENT DE QUAI APRÈS-MIDI*`;
+  for(let i=1;i<=7;i++){const c=v('rm-c'+i);if(c)txt+=`\n${i}. ${c}`;}
+  txt+=`\n${'─'.repeat(34)}\n🛡 _${v('rm-rappel')}_\n🎯 _${v('rm-objectif')}_\n\n_Rapport rédigé par Ait Ouali Omar — TLC Services Roncq_`;
+
+  navigator.clipboard.writeText(txt).then(()=>toast('✅ Rapport WhatsApp copié !')).catch(()=>{
+    const t=document.createElement('textarea');t.value=txt;document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);toast('✅ Copié !');
+  });
+};
+
+function toast(msg){
+  let t=document.getElementById('_toast');
+  if(!t){t=document.createElement('div');t.id='_toast';t.style.cssText='position:fixed;top:14px;left:50%;transform:translateX(-50%);background:#0f1923;color:#fff;padding:10px 20px;border-radius:30px;font-size:13px;font-weight:600;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap';document.body.appendChild(t);}
+  t.textContent=msg;t.style.opacity='1';setTimeout(()=>t.style.opacity='0',2500);
+}
+</script>
+</body>
+</html>

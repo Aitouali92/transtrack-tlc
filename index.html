@@ -1,0 +1,2038 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="theme-color" content="#0f1923"/>
+<title>TransiTrack v6 — TLC Services</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{
+  --night:#0f1923;--night2:#1a2535;--night3:#243044;
+  --amber:#f5a623;--amber2:#f97316;
+  --red:#ef4444;--blue:#3b9eff;--green:#22c55e;
+  --purple:#a78bfa;--teal:#14b8a6;--pink:#ec4899;
+  --bg:#f0ede8;--card:#fff;--border:#e2ddd6;
+  --text:#0f1923;--muted:#8a8278;
+  --r:16px;--shadow:0 4px 20px rgba(15,25,35,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overflow:hidden;}
+body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column;}
+
+/* TOAST */
+.toast{position:fixed;top:14px;left:50%;transform:translateX(-50%);background:var(--night);color:#fff;padding:10px 20px;border-radius:30px;font-size:13px;font-weight:600;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;max-width:90vw;}
+.toast.show{opacity:1;}
+
+/* LOADER */
+.loader-ov{position:fixed;inset:0;background:var(--night);z-index:998;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;}
+.loader-logo{width:72px;height:72px;border-radius:22px;background:linear-gradient(135deg,var(--amber),var(--amber2));display:flex;align-items:center;justify-content:center;font-size:36px;}
+.spinner{width:32px;height:32px;border:3px solid rgba(255,255,255,.15);border-top-color:var(--amber);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* LOCK */
+.lock{position:fixed;inset:0;background:var(--night);z-index:997;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;}
+.lock-logo{width:72px;height:72px;border-radius:22px;background:linear-gradient(135deg,var(--amber),var(--amber2));display:flex;align-items:center;justify-content:center;font-size:36px;margin-bottom:20px;}
+.lock-role{display:flex;gap:10px;margin-bottom:28px;}
+.lock-role-btn{flex:1;padding:12px;border-radius:14px;border:2px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);color:rgba(255,255,255,.5);font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;}
+.lock-role-btn.on{border-color:var(--amber);background:rgba(245,166,35,.15);color:var(--amber);}
+.pin-display{display:flex;gap:12px;margin-bottom:20px;}
+.pin-dot{width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,.3);transition:all .2s;}
+.pin-dot.filled{background:var(--amber);border-color:var(--amber);}
+.pin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;width:100%;max-width:280px;}
+.pin-btn{padding:16px;border-radius:14px;border:none;background:rgba(255,255,255,.07);color:#fff;font-family:'Outfit',sans-serif;font-size:22px;font-weight:700;cursor:pointer;transition:all .15s;}
+.pin-btn:active{background:rgba(255,255,255,.15);transform:scale(.95);}
+.pin-del{background:rgba(239,68,68,.15);color:var(--red);}
+.lock-err{color:var(--red);font-size:13px;font-weight:600;height:20px;text-align:center;margin-bottom:8px;}
+
+/* HEADER */
+.hdr{background:var(--night);color:#fff;padding:12px 16px 10px;display:flex;align-items:center;gap:10px;flex-shrink:0;z-index:10;}
+.hdr-logo{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--amber),var(--amber2));display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.hdr-title{font-size:16px;font-weight:800;letter-spacing:-.5px;}
+.hdr-sub{font-size:9px;opacity:.4;letter-spacing:1.5px;text-transform:uppercase;}
+.hdr-right{margin-left:auto;display:flex;align-items:center;gap:6px;}
+.sync-btn{background:rgba(255,255,255,.08);border:none;color:rgba(255,255,255,.6);border-radius:8px;padding:5px 9px;font-size:12px;cursor:pointer;font-family:'Outfit',sans-serif;font-weight:600;}
+.role-pill{padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;}
+
+/* SCROLL & NAV */
+.scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 14px 95px;}
+.bnav{position:fixed;bottom:0;left:0;right:0;background:var(--night);display:flex;z-index:200;padding-bottom:env(safe-area-inset-bottom);border-top:1px solid rgba(255,255,255,.07);}
+.bnav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:9px 0 7px;border:none;background:transparent;color:rgba(255,255,255,.3);font-family:'Outfit',sans-serif;font-size:8.5px;font-weight:600;cursor:pointer;gap:4px;text-transform:uppercase;transition:color .2s;}
+.bnav-btn .ico{font-size:18px;line-height:1;}
+.bnav-btn.on{color:var(--amber);}
+
+/* TYPO */
+.stitle{font-size:20px;font-weight:900;letter-spacing:-1px;margin-bottom:3px;}
+.ssub{font-size:12px;color:var(--muted);margin-bottom:16px;}
+
+/* CARDS */
+.card{background:var(--card);border-radius:var(--r);border:1px solid var(--border);box-shadow:var(--shadow);margin-bottom:12px;}
+.cp{padding:16px;}
+.sgrid2{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px;}
+.sgrid4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;}
+.scard{background:var(--card);border-radius:14px;border:1px solid var(--border);padding:12px;text-align:center;}
+.scard-ico{font-size:20px;margin-bottom:6px;}
+.scard-val{font-size:24px;font-weight:900;letter-spacing:-1px;}
+.scard-lbl{font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;margin-top:2px;}
+
+/* BUTTONS */
+.btn{width:100%;padding:13px;border-radius:13px;border:none;font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:opacity .15s,transform .15s;}
+.btn:active{opacity:.85;transform:scale(.98);}
+.btn-night{background:linear-gradient(135deg,var(--night),var(--night2));color:#fff;}
+.btn-amber{background:linear-gradient(135deg,var(--amber),var(--amber2));color:#fff;}
+.btn-green{background:linear-gradient(135deg,var(--green),#16a34a);color:#fff;}
+.btn-blue{background:linear-gradient(135deg,var(--blue),#1d6dbf);color:#fff;}
+.btn-red{background:linear-gradient(135deg,var(--red),#dc2626);color:#fff;}
+.btn-purple{background:linear-gradient(135deg,var(--purple),#7c3aed);color:#fff;}
+.btn-ghost{background:transparent;color:var(--muted);border:1.5px solid var(--border);}
+.btn-sm{padding:6px 12px;font-size:11px;border-radius:9px;width:auto;}
+.btn-row{display:flex;gap:8px;}
+
+/* FORM */
+.fg{margin-bottom:15px;}
+.fl{display:block;font-size:12px;font-weight:700;color:#555;margin-bottom:6px;}
+.fc{width:100%;border:1.5px solid var(--border);border-radius:11px;padding:11px 13px;font-family:'Outfit',sans-serif;font-size:13px;color:var(--text);background:var(--bg);outline:none;-webkit-appearance:none;}
+.fc:focus{border-color:var(--night);}
+textarea.fc{resize:vertical;min-height:70px;}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.chips{display:flex;flex-wrap:wrap;gap:7px;}
+.chip{padding:6px 12px;border-radius:20px;border:1.5px solid var(--border);background:var(--bg);color:#666;font-size:12px;font-weight:600;cursor:pointer;font-family:'Outfit',sans-serif;transition:all .15s;}
+.chip.on{background:var(--night);color:#fff;border-color:var(--night);}
+.fpills{display:flex;gap:7px;overflow-x:auto;padding-bottom:4px;margin-bottom:14px;scrollbar-width:none;}
+.fpills::-webkit-scrollbar{display:none;}
+.fpill{padding:6px 13px;border-radius:20px;border:1.5px solid var(--border);background:var(--card);color:#777;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:'Outfit',sans-serif;transition:all .15s;flex-shrink:0;}
+.fpill.on{background:var(--night);color:#fff;border-color:var(--night);}
+
+/* MODAL */
+.moverlay{position:fixed;inset:0;background:rgba(15,25,35,.7);display:flex;align-items:flex-end;z-index:500;backdrop-filter:blur(6px);}
+.msheet{background:var(--card);border-radius:22px 22px 0 0;padding:22px 16px;width:100%;max-height:92vh;overflow-y:auto;padding-bottom:calc(22px + env(safe-area-inset-bottom));animation:sup .3s cubic-bezier(.22,1,.36,1);}
+@keyframes sup{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.mhandle{width:36px;height:4px;background:#e0dbd4;border-radius:2px;margin:0 auto 18px;}
+.mtitle{font-size:18px;font-weight:900;letter-spacing:-.5px;margin-bottom:14px;}
+
+/* FAB */
+.fab{position:fixed;bottom:calc(68px + env(safe-area-inset-bottom));right:16px;width:50px;height:50px;border-radius:14px;background:linear-gradient(135deg,var(--amber),var(--amber2));border:none;color:#fff;font-size:24px;cursor:pointer;box-shadow:0 8px 24px rgba(245,166,35,.45);display:flex;align-items:center;justify-content:center;z-index:150;}
+.fab:active{transform:scale(.92);}
+
+.back{display:inline-flex;align-items:center;gap:5px;background:var(--card);border:1.5px solid var(--border);border-radius:9px;padding:7px 12px;font-size:12px;font-weight:600;cursor:pointer;margin-bottom:14px;font-family:'Outfit',sans-serif;color:var(--text);}
+.empty{text-align:center;padding:36px 16px;color:var(--muted);}
+.dzone{border:1.5px dashed #fca5a5;border-radius:11px;padding:12px;margin-top:14px;}
+.fpre{background:var(--bg);border-radius:11px;padding:14px;font-family:'JetBrains Mono',monospace;font-size:10px;line-height:1.8;white-space:pre;overflow-x:auto;border:1px solid var(--border);margin-bottom:14px;}
+
+/* STATUS CHAUFFEUR */
+.statut-btn{flex:1;padding:8px 4px;border-radius:10px;border:2px solid var(--border);background:var(--bg);font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;cursor:pointer;text-align:center;transition:all .15s;}
+.statut-btn.on-green{background:#dcfce7;border-color:#22c55e;color:#15803d;}
+.statut-btn.on-red{background:#fee2e2;border-color:#ef4444;color:#dc2626;}
+.statut-btn.on-amber{background:#fef3c7;border-color:#f5a623;color:#92400e;}
+.statut-btn.on-blue{background:#dbeafe;border-color:#3b9eff;color:#1d4ed8;}
+.statut-btn.on-purple{background:#ede9fe;border-color:#a78bfa;color:#6d28d9;}
+
+/* CHAUFFEUR ROW */
+.chauff-row{background:var(--card);border-radius:13px;border:1px solid var(--border);padding:12px 14px;margin-bottom:8px;box-shadow:var(--shadow);}
+.chauff-nom{font-weight:700;font-size:14px;}
+.chauff-meta{font-size:11px;color:var(--muted);margin-top:2px;}
+.statut-row{display:flex;gap:6px;margin-top:10px;}
+
+/* BADGE */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;}
+
+/* PAIE */
+.paie-card{background:linear-gradient(135deg,#1e3a5f,var(--night));color:#fff;border-radius:var(--r);padding:18px;margin-bottom:12px;}
+.paie-total{font-size:32px;font-weight:900;letter-spacing:-2px;margin:8px 0;}
+
+/* PASSATION */
+.pass-card{background:linear-gradient(135deg,var(--night),var(--night2));color:#fff;border-radius:var(--r);padding:18px;margin-bottom:12px;}
+.pass-line{display:flex;align-items:flex-start;gap:9px;margin-bottom:9px;}
+.pass-ico{font-size:16px;flex-shrink:0;margin-top:1px;}
+.pass-text{font-size:12px;opacity:.8;flex:1;line-height:1.4;}
+
+/* EVT */
+.evt{background:var(--card);border-radius:13px;border:1px solid var(--border);padding:13px 14px;margin-bottom:9px;box-shadow:var(--shadow);}
+.ebadge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;}
+.periode-badge{display:inline-flex;align-items:center;gap:5px;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;margin-top:5px;}
+.statut-tag{font-size:11px;padding:2px 9px;border-radius:20px;font-weight:700;white-space:nowrap;}
+
+/* WHATSAPP */
+.wa-msg{background:#dcfce7;border-radius:13px;padding:14px;font-size:13px;line-height:1.7;white-space:pre-wrap;margin-bottom:12px;border:1px solid #bbf7d0;}
+
+/* BILAN */
+.bilan-kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px;}
+.bkpi{background:var(--card);border-radius:12px;border:1px solid var(--border);padding:10px 6px;text-align:center;}
+.bkpi-val{font-size:20px;font-weight:900;letter-spacing:-1px;}
+.bkpi-lbl{font-size:9px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-top:2px;}
+canvas{display:block;max-width:100%;}
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+<div class="loader-ov" id="loaderOv">
+  <div class="loader-logo">🚌</div>
+  <div style="color:#fff;font-size:20px;font-weight:900;letter-spacing:-1px">TransiTrack</div>
+  <div style="color:rgba(255,255,255,.4);font-size:12px" id="loaderMsg">Chargement…</div>
+  <div class="spinner"></div>
+</div>
+
+<div class="lock" id="lockScreen" style="display:none">
+  <div class="lock-logo">🚌</div>
+  <div style="color:#fff;font-size:22px;font-weight:900;letter-spacing:-1px;margin-bottom:4px">TransiTrack</div>
+  <div style="color:rgba(255,255,255,.4);font-size:12px;margin-bottom:28px">TLC Services — Roncq</div>
+  <div class="lock-role">
+    <button class="lock-role-btn on" id="lr-disp" onclick="selectRole('dispatcher')">🎯 Dispatcher</button>
+    <button class="lock-role-btn" id="lr-quai" onclick="selectRole('quai')">🌙 Agent Quai</button>
+  </div>
+  <div class="pin-display" id="pinDisplay">
+    <div class="pin-dot" id="pd0"></div><div class="pin-dot" id="pd1"></div>
+    <div class="pin-dot" id="pd2"></div><div class="pin-dot" id="pd3"></div>
+  </div>
+  <div class="lock-err" id="pinErr"></div>
+  <div class="pin-grid">
+    <button class="pin-btn" onclick="pinInput('1')">1</button><button class="pin-btn" onclick="pinInput('2')">2</button><button class="pin-btn" onclick="pinInput('3')">3</button>
+    <button class="pin-btn" onclick="pinInput('4')">4</button><button class="pin-btn" onclick="pinInput('5')">5</button><button class="pin-btn" onclick="pinInput('6')">6</button>
+    <button class="pin-btn" onclick="pinInput('7')">7</button><button class="pin-btn" onclick="pinInput('8')">8</button><button class="pin-btn" onclick="pinInput('9')">9</button>
+    <button class="pin-btn" onclick="pinInput('0')" style="grid-column:2">0</button>
+    <button class="pin-btn pin-del" onclick="pinDel()">⌫</button>
+  </div>
+  <div style="color:rgba(255,255,255,.2);font-size:10px;margin-top:14px;text-align:center">Dispatcher : 1234 · Agent Quai : 5678</div>
+</div>
+
+<header class="hdr" id="mainHdr" style="display:none">
+  <div class="hdr-logo">🚌</div>
+  <div><div class="hdr-title">TransiTrack</div><div class="hdr-sub">TLC — Roncq</div></div>
+  <div class="hdr-right">
+    <button class="sync-btn" onclick="syncAll(true)" id="syncBtn">🔄</button>
+    <span class="role-pill" id="rolePill" style="background:#fef3c7;color:#92400e"></span>
+  </div>
+</header>
+
+<div class="scroll" id="app" style="display:none"></div>
+
+<nav class="bnav" id="mainNav" style="display:none">
+  <button class="bnav-btn on" id="nb-dash"    onclick="go('dash')">   <span class="ico">📊</span>Accueil</button>
+  <button class="bnav-btn"   id="nb-matin"   onclick="go('matin')">  <span class="ico">🌅</span>Matin</button>
+  <button class="bnav-btn"   id="nb-tournee" onclick="go('tournee')"><span class="ico">🚛</span>Tournées</button>
+  <button class="bnav-btn"   id="nb-rapport" onclick="go('rapport')"><span class="ico">📋</span>Rapport</button>
+  <button class="bnav-btn"   id="nb-rh"      onclick="go('rh')">     <span class="ico">👥</span>RH</button>
+  <button class="bnav-btn"   id="nb-more"    onclick="go('more')">   <span class="ico">⚙️</span>Plus</button>
+</nav>
+
+<script>
+const API='https://script.google.com/macros/s/AKfycbytSYhmRdLE7IBC7MI2a21-NrKe4q1TsxzKk85ndDHr0nrWVgUN1rcHQqcbTYxnZlUo/exec';
+const MOIS=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+const DAYS=['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+const PINS_KEY='tt_pins';
+const DEFAULT_PINS={dispatcher:'1234',quai:'5678'};
+
+const ROLES={
+  chauffeur:    {label:'Chauffeur',      color:'#22c55e',bg:'#dcfce7',ico:'🚛'},
+  chauffeurplus:{label:'Chauffeur+',     color:'#3b9eff',bg:'#dbeafe',ico:'⭐'},
+  dispatcher:   {label:'Dispatcher',    color:'#f5a623',bg:'#fef3c7',ico:'🎯'},
+  quai_soir:   {label:'Agent Quai Soir',color:'#a78bfa',bg:'#ede9fe',ico:'🌙'},
+  quai_samedi: {label:'Agent Samedi',   color:'#14b8a6',bg:'#ccfbf1',ico:'📅'},
+};
+const CONTRATS={cdi:'CDI',cdd:'CDD',auto:'Auto-entrepreneur'};
+const GROUPES={g1:'Groupe 1 — 8h30',g2:'Groupe 2 — 9h15'};
+const STATUTS_TOURNEE={
+  attente:  {label:'En attente',  color:'#8a8278',bg:'#f3f4f6',ico:'⏳'},
+  parti:    {label:'En tournée',  color:'#22c55e',bg:'#dcfce7',ico:'🟢'},
+  retour:   {label:'Retour',      color:'#3b9eff',bg:'#dbeafe',ico:'✅'},
+  abandon:  {label:'Abandon',     color:'#ef4444',bg:'#fee2e2',ico:'🔴'},
+  absence:  {label:'Absent',      color:'#dc2626',bg:'#fee2e2',ico:'❌'},
+  demi:     {label:'Demi-tournée',color:'#f5a623',bg:'#fef3c7',ico:'½'},
+};
+const EVT={
+  retard:     {label:'Retard',           color:'#f5a623',bg:'#fef3c7',ico:'⏰',hasPeriode:false},
+  absence:    {label:'Absence injust.',  color:'#ef4444',bg:'#fee2e2',ico:'✗', hasPeriode:false},
+  repos:      {label:'Repos',           color:'#22c55e',bg:'#dcfce7',ico:'🛌',hasPeriode:true},
+  conge:      {label:'Congé annuel',     color:'#3b9eff',bg:'#dbeafe',ico:'🏖',hasPeriode:true},
+  maladie:    {label:'Arrêt maladie',    color:'#a78bfa',bg:'#ede9fe',ico:'🏥',hasPeriode:true,hasCertif:true},
+  accident:   {label:'Accident travail', color:'#dc2626',bg:'#fee2e2',ico:'⚠', hasPeriode:true,hasCertif:true},
+  formation:  {label:'Formation',        color:'#22c55e',bg:'#dcfce7',ico:'📚',hasPeriode:true},
+  sanction:   {label:'Sanction',         color:'#6b7280',bg:'#f3f4f6',ico:'📋',hasPeriode:false},
+  reclamation:{label:'Réclamation',      color:'#a855f7',bg:'#fdf4ff',ico:'📣',hasPeriode:false},
+  demande:    {label:'Demande',          color:'#14b8a6',bg:'#ccfbf1',ico:'📝',hasPeriode:false},
+};
+const SERVICES=['RH','Direction','Exploitation','Mickael Talaha'];
+const STATUTS_EVT=['Justifié','Non justifié','En attente','Approuvé','Refusé'];
+const TARIFS={pleine:75,demi:40};
+
+// ══ UTILS ══
+function toast(msg,dur=2800){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),dur);}
+function todayISO(){return new Date().toISOString().split('T')[0];}
+function fmtDate(s){if(!s)return'—';try{return new Date(s).toLocaleDateString('fr-FR');}catch{return s;}}
+function initials(n){return(n||'?').split(' ').map(x=>x[0]).join('').toUpperCase().slice(0,2);}
+function diffDays(d1,d2){if(!d1||!d2)return 0;return Math.round((new Date(d2)-new Date(d1))/(1000*60*60*24))+1;}
+function fmtEuro(n){return n.toLocaleString('fr-FR',{style:'currency',currency:'EUR'});}
+
+// ══ API ══
+async function apiCall(params){
+  const url=new URL(API);
+  Object.entries(params).forEach(([k,v])=>url.searchParams.set(k,typeof v==='object'?JSON.stringify(v):v));
+  const res=await fetch(url.toString());return res.json();
+}
+async function postAPI(action,body){
+  const res=await fetch(`${API}?action=${action}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  return res.json();
+}
+async function syncAll(manual=false){
+  if(manual)toast('🔄 Synchronisation…');
+  const btn=document.getElementById('syncBtn');
+  if(btn){btn.textContent='⏳';btn.disabled=true;}
+  try{
+    const data=await apiCall({action:'getAll'});
+    if(data.error)throw new Error(data.error);
+    S.data={
+      members:   data.members    ||[],
+      events:    data.events     ||[],
+      repos:     arrToObj(data.repos||[]),
+      passations:data.passations ||[],
+      tournees:  data.tournees   ||[],
+      paie:      data.paie       ||[],
+    };
+    localStorage.setItem('tt_cache',JSON.stringify(S.data));
+    localStorage.setItem('tt_cache_ts',Date.now());
+    if(manual)toast('✅ À jour !');render();
+  }catch(e){toast('⚠ Hors ligne');loadFromCache();}
+  finally{if(btn){btn.textContent='🔄';btn.disabled=false;}}
+}
+function arrToObj(arr){const o={};(arr||[]).forEach(r=>{if(r.key)o[r.key]=true;});return o;}
+function objToArr(o){return Object.keys(o||{}).map(k=>({key:k,val:true}));}
+async function push(action,data){try{await apiCall({action,data});}catch(e){toast('⚠ Sync échouée');}}
+function loadFromCache(){const c=localStorage.getItem('tt_cache');if(c){S.data=JSON.parse(c);render();}else{S.data={members:[],events:[],repos:{},passations:[],tournees:[],paie:[]};render();}}
+
+// ══ AUTH ══
+let currentRole='dispatcher',pinBuffer='';
+function getPins(){return JSON.parse(localStorage.getItem(PINS_KEY)||JSON.stringify(DEFAULT_PINS));}
+function savePins(p){localStorage.setItem(PINS_KEY,JSON.stringify(p));}
+function selectRole(r){currentRole=r;pinBuffer='';updateDots();document.getElementById('pinErr').textContent='';document.getElementById('lr-disp').classList.toggle('on',r==='dispatcher');document.getElementById('lr-quai').classList.toggle('on',r==='quai');}
+function pinInput(d){if(pinBuffer.length>=4)return;pinBuffer+=d;updateDots();if(pinBuffer.length===4)setTimeout(checkPin,150);}
+function pinDel(){pinBuffer=pinBuffer.slice(0,-1);updateDots();}
+function updateDots(){for(let i=0;i<4;i++){const el=document.getElementById('pd'+i);if(el)el.classList.toggle('filled',i<pinBuffer.length);}}
+function checkPin(){
+  const pins=getPins();
+  if(pinBuffer===(pins[currentRole]||DEFAULT_PINS[currentRole])){
+    ['lockScreen'].forEach(id=>document.getElementById(id).style.display='none');
+    ['mainHdr','app','mainNav'].forEach(id=>document.getElementById(id).style.display=id==='app'?'block':id==='mainHdr'?'flex':'flex');
+    document.getElementById('rolePill').textContent=currentRole==='dispatcher'?'🎯 Dispatcher':'🌙 Quai';
+    render();
+  }else{
+    document.getElementById('pinErr').textContent='❌ Code incorrect';
+    pinBuffer='';updateDots();
+    setTimeout(()=>{document.getElementById('pinErr').textContent='';},2000);
+  }
+}
+
+// ══ STATE ══
+let S={
+  view:'dash',data:{members:[],events:[],repos:{},passations:[],tournees:[],paie:[]},
+  selId:null,filter:'all',search:'',modal:null,mdata:{},editId:null,
+  bilanMonth:new Date().getMonth(),bilanYear:new Date().getFullYear(),
+  paieMonth:new Date().getMonth(),paieYear:new Date().getFullYear(),
+  waType:'planning',
+};
+function D(){return S.data;}
+function getMember(id){return D().members.find(m=>String(m.id)===String(id));}
+function getMemberEvts(id){return D().events.filter(e=>String(e.memberId)===String(id));}
+
+// Tournée du jour
+function getTourneeJour(memberId,date){return D().tournees.find(t=>String(t.memberId)===String(memberId)&&t.date===date)||null;}
+function saveTourneeJour(t){
+  const idx=D().tournees.findIndex(x=>String(x.memberId)===String(t.memberId)&&x.date===t.date);
+  if(idx>-1)D().tournees[idx]=t; else D().tournees.push(t);
+  push('saveTournees',D().tournees);
+}
+
+// ══ NAVIGATE ══
+function go(view,id){
+  S.view=view;if(id!==undefined)S.selId=id;
+  S.filter='all';S.search='';
+  document.querySelectorAll('.bnav-btn').forEach(b=>b.classList.remove('on'));
+  const map={dash:'nb-dash',matin:'nb-matin',tournee:'nb-tournee',rh:'nb-rh',paie:'nb-paie',more:'nb-more',member_detail:'nb-rh',bilan:'nb-more',whatsapp:'nb-more',passation:'nb-more'};
+  const el=document.getElementById(map[view]||'nb-dash');if(el)el.classList.add('on');
+  document.querySelectorAll('.fab').forEach(f=>f.remove());
+  render();
+}
+function fab(fn,ico='+'){const f=document.createElement('button');f.className='fab';f.innerHTML=ico;f.onclick=fn;document.body.appendChild(f);}
+
+// ══ RENDER ══
+function render(){
+  const app=document.getElementById('app');
+  const v=S.view;
+  if(v==='dash')         app.innerHTML=rDash();
+  else if(v==='matin')   {app.innerHTML=rMatin();if(currentRole==='dispatcher')fab(()=>openModal('add_member'));}
+  else if(v==='tournee') app.innerHTML=rTournee();
+  else if(v==='rh')      {app.innerHTML=rRH();if(currentRole==='dispatcher')fab(()=>{if(!D().members.length)return;openModal('add_event');});}
+  else if(v==='member_detail') app.innerHTML=rMemberDetail();
+  else if(v==='paie')    app.innerHTML=rPaie();
+  else if(v==='bilan')   {app.innerHTML=rBilan();setTimeout(drawBilanChart,100);}
+  else if(v==='whatsapp') app.innerHTML=rWhatsApp();
+  else if(v==='passation') {app.innerHTML=rPassation();if(currentRole==='dispatcher')fab(()=>openModal('add_passation'));}
+  else if(v==='more')    app.innerHTML=rMore();
+  renderModal();
+}
+
+// ══════════════════════════════════════════════
+// DASHBOARD
+// ══════════════════════════════════════════════
+function rDash(){
+  const{members,events,tournees}=D();
+  const today=todayISO();
+  const ts=localStorage.getItem('tt_cache_ts');
+  const syncAgo=ts?Math.round((Date.now()-parseInt(ts))/60000)+'min':'—';
+
+  // Stats du jour
+  const tJour=tournees.filter(t=>t.date===today);
+  const partis=tJour.filter(t=>t.statut==='parti'||t.statut==='retour'||t.statut==='demi').length;
+  const absents=tJour.filter(t=>t.statut==='absence').length;
+  const abandons=tJour.filter(t=>t.statut==='abandon').length;
+  const retours=tJour.filter(t=>t.statut==='retour').length;
+  const actifs=members.filter(m=>!['dispatcher','quai_soir','quai_samedi'].includes(m.role));
+
+  const now=new Date();
+  const heure=now.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+  const dateStr=now.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
+
+  return`
+  <div style="background:linear-gradient(135deg,var(--night),var(--night2));border-radius:var(--r);padding:18px;margin-bottom:14px;color:#fff">
+    <div style="font-size:12px;opacity:.5;margin-bottom:4px">${dateStr}</div>
+    <div style="font-size:28px;font-weight:900;letter-spacing:-1px">${heure}</div>
+    <div style="font-size:12px;opacity:.5;margin-top:4px">Sync il y a ${syncAgo}</div>
+    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+      <span style="background:rgba(34,197,94,.2);color:#4ade80;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700">🟢 ${partis} en tournée</span>
+      <span style="background:rgba(59,158,255,.2);color:#93c5fd;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700">✅ ${retours} retours</span>
+      ${absents?`<span style="background:rgba(239,68,68,.2);color:#fca5a5;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700">❌ ${absents} absent(s)</span>`:''}
+      ${abandons?`<span style="background:rgba(245,166,35,.2);color:#fcd34d;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700">⚠ ${abandons} abandon(s)</span>`:''}
+    </div>
+  </div>
+
+  <div class="sgrid4">
+    <div class="scard"><div class="scard-ico">👥</div><div class="scard-val" style="color:var(--blue)">${actifs.length}</div><div class="scard-lbl">Chauffeurs</div></div>
+    <div class="scard"><div class="scard-ico">🚛</div><div class="scard-val" style="color:var(--green)">${partis}</div><div class="scard-lbl">Partis</div></div>
+    <div class="scard"><div class="scard-ico">✅</div><div class="scard-val" style="color:var(--blue)">${retours}</div><div class="scard-lbl">Retours</div></div>
+    <div class="scard"><div class="scard-ico">❌</div><div class="scard-val" style="color:var(--red)">${absents}</div><div class="scard-lbl">Absents</div></div>
+  </div>
+
+  <!-- Accès rapides -->
+  <div style="font-weight:800;font-size:14px;margin-bottom:10px">Accès rapides</div>
+  <div class="sgrid2">
+    <button class="btn btn-amber" onclick="go('matin')" style="height:60px;font-size:13px">🌅 Checklist matin</button>
+    <button class="btn btn-green" onclick="go('tournee')" style="height:60px;font-size:13px">🚛 Suivi tournées</button>
+    <button class="btn btn-blue" onclick="go('whatsapp')" style="height:60px;font-size:13px">💬 WhatsApp</button>
+    <button class="btn btn-purple" onclick="go('bilan')" style="height:60px;font-size:13px">📈 Bilan</button>
+    <button class="btn btn-night" onclick="go('passation')" style="height:60px;font-size:13px">🔁 Passation</button>
+    <button class="btn btn-ghost" onclick="go('paie')" style="height:60px;font-size:13px">💰 Paie</button>
+  </div>
+
+  <!-- Alerte absences -->
+  ${absents>0?`<div style="background:#fee2e2;border:1px solid #fca5a5;border-radius:13px;padding:14px;margin-bottom:12px">
+    <div style="font-weight:800;color:#dc2626;margin-bottom:8px">🚨 ${absents} chauffeur(s) absent(s) aujourd'hui</div>
+    ${tJour.filter(t=>t.statut==='absence').map(t=>{const m=getMember(t.memberId);return`<div style="font-size:13px;color:#dc2626">• ${m?m.nom:'?'} ${m?'('+GROUPES[m.groupe]||'':''}</div>`;}).join('')}
+    <button class="btn btn-red btn-sm" onclick="openModal('protocole_absence')" style="margin-top:10px">📋 Protocole remplacement</button>
+  </div>`:''}`;
+}
+
+// ══════════════════════════════════════════════
+// CHECKLIST MATIN
+// ══════════════════════════════════════════════
+function rMatin(){
+  const today=todayISO();
+  const members=D().members.filter(m=>['chauffeur','chauffeurplus'].includes(m.role));
+  const g1=members.filter(m=>m.groupe==='g1'||!m.groupe);
+  const g2=members.filter(m=>m.groupe==='g2');
+
+  return`
+  <div class="stitle">🌅 Checklist matin</div>
+  <div class="ssub">${new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})}</div>
+
+  ${rGroupeChecklist('Groupe 1 — 8h30 🚛',g1,today,'g1')}
+  ${rGroupeChecklist('Groupe 2 — 9h15 🚛',g2,today,'g2')}
+
+  <div class="btn-row" style="margin-top:8px">
+    <button class="btn btn-blue" onclick="genWADepart()" style="flex:1">💬 Message départ WhatsApp</button>
+    <button class="btn btn-night" onclick="go('tournee')" style="flex:1">🚛 Suivi tournées</button>
+  </div>`;
+}
+
+function rGroupeChecklist(titre,members,today,groupe){
+  if(!members.length) return`<div class="card cp" style="margin-bottom:12px"><div style="font-weight:800;font-size:14px;margin-bottom:12px">${titre}</div><div style="font-size:13px;color:var(--muted)">Aucun chauffeur dans ce groupe</div></div>`;
+  const partis=members.filter(m=>{const t=getTourneeJour(m.id,today);return t&&(t.statut==='parti'||t.statut==='retour');}).length;
+  return`<div class="card cp" style="margin-bottom:12px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div style="font-weight:800;font-size:14px">${titre}</div>
+      <span style="background:#dcfce7;color:#15803d;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700">${partis}/${members.length} partis</span>
+    </div>
+    ${members.map(m=>{
+      const t=getTourneeJour(m.id,today)||{statut:'attente',sacsOk:false};
+      const st=STATUTS_TOURNEE[t.statut]||STATUTS_TOURNEE.attente;
+      return`<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
+        <div style="width:36px;height:36px;border-radius:10px;background:${ROLES[m.role]?.color||'#22c55e'};display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;flex-shrink:0">${initials(m.nom)}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700;font-size:13px">${m.nom}</div>
+          <div style="font-size:11px;color:var(--muted)">${m.matricule||''} · ${CONTRATS[m.contrat]||''}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+          <span style="background:${st.bg};color:${st.color};padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700">${st.ico} ${st.label}</span>
+          ${currentRole==='dispatcher'?`<button class="btn btn-ghost btn-sm" onclick="openCheckChauffeur('${m.id}','${today}')" style="font-size:10px;padding:4px 8px">Modifier</button>`:''}
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+window.openCheckChauffeur=function(memberId,date){openModal('check_chauffeur',{memberId,date});};
+
+// ══════════════════════════════════════════════
+// SUIVI TOURNÉES
+// ══════════════════════════════════════════════
+function rTournee(){
+  const today=todayISO();
+  const members=D().members.filter(m=>['chauffeur','chauffeurplus'].includes(m.role));
+
+  const stats={};
+  Object.keys(STATUTS_TOURNEE).forEach(k=>stats[k]=0);
+  members.forEach(m=>{const t=getTourneeJour(m.id,today);stats[t?.statut||'attente']++;});
+
+  return`
+  <div class="stitle">🚛 Suivi tournées</div>
+  <div class="ssub">${new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})}</div>
+
+  <!-- Résumé -->
+  <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:14px;scrollbar-width:none">
+    ${Object.entries(STATUTS_TOURNEE).map(([k,v])=>`
+    <div style="flex-shrink:0;background:${v.bg};border:1.5px solid ${v.color};border-radius:12px;padding:8px 12px;text-align:center;min-width:70px">
+      <div style="font-size:18px">${v.ico}</div>
+      <div style="font-size:18px;font-weight:900;color:${v.color}">${stats[k]||0}</div>
+      <div style="font-size:9px;font-weight:700;color:${v.color};white-space:nowrap">${v.label}</div>
+    </div>`).join('')}
+  </div>
+
+  <!-- Liste chauffeurs -->
+  ${members.length?members.map(m=>{
+    const t=getTourneeJour(m.id,today)||{statut:'attente'};
+    const st=STATUTS_TOURNEE[t.statut]||STATUTS_TOURNEE.attente;
+    const r=ROLES[m.role]||ROLES.chauffeur;
+    return`<div class="chauff-row">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:40px;height:40px;border-radius:11px;background:${r.color};display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;flex-shrink:0">${initials(m.nom)}</div>
+        <div style="flex:1">
+          <div class="chauff-nom">${m.nom}</div>
+          <div class="chauff-meta">${GROUPES[m.groupe]||'Groupe 1'} · ${m.matricule||'—'}</div>
+        </div>
+        <span style="background:${st.bg};color:${st.color};padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700">${st.ico} ${st.label}</span>
+      </div>
+      ${t.sacsOublies?`<div style="background:#fef3c7;border-radius:9px;padding:8px;margin-top:8px;font-size:12px;color:#92400e">📦 Sac oublié : ${t.sacsOublies}</div>`:''}
+      ${t.incident?`<div style="background:#fee2e2;border-radius:9px;padding:8px;margin-top:8px;font-size:12px;color:#dc2626">⚠ ${t.incident}</div>`:''}
+      ${currentRole==='dispatcher'?`<div class="statut-row">
+        ${Object.entries(STATUTS_TOURNEE).map(([k,v])=>`
+        <button class="statut-btn ${t.statut===k?'on-'+getStatutColor(k):''}" onclick="setStatutTournee('${m.id}','${today}','${k}')">${v.ico}</button>`).join('')}
+      </div>
+      <div style="display:flex;gap:6px;margin-top:6px">
+        <button class="btn btn-ghost btn-sm" onclick="openIncident('${m.id}','${today}')">⚠ Incident</button>
+        <button class="btn btn-ghost btn-sm" onclick="openSacOublie('${m.id}','${today}')">📦 Sac oublié</button>
+      </div>`:''}
+    </div>`;}).join(''):`<div class="card cp"><div class="empty"><div style="font-size:36px">🚛</div><div style="font-weight:700;margin-top:8px">Aucun chauffeur</div></div></div>`}`;
+}
+
+function getStatutColor(k){
+  const map={parti:'green',retour:'blue',abandon:'red',absence:'red',attente:'',demi:'amber'};
+  return map[k]||'';
+}
+
+window.setStatutTournee=async function(memberId,date,statut){
+  if(currentRole!=='dispatcher')return;
+  const existing=getTourneeJour(memberId,date)||{memberId,date};
+  existing.statut=statut;
+  existing.heureStatut=new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+  saveTourneeJour(existing);
+  render();toast(`✅ Statut mis à jour : ${STATUTS_TOURNEE[statut]?.label}`);
+};
+
+window.openIncident=function(memberId,date){openModal('incident',{memberId,date});};
+window.openSacOublie=function(memberId,date){openModal('sac_oublie',{memberId,date});};
+
+// ══════════════════════════════════════════════
+// RH
+// ══════════════════════════════════════════════
+function rRH(){
+  const members=D().members;
+  const filtered=members.filter(m=>m.nom.toLowerCase().includes(S.search.toLowerCase())||(m.matricule||'').toLowerCase().includes(S.search.toLowerCase()));
+  return`
+  <div class="stitle">📋 Suivi RH</div>
+  <div class="ssub">${members.length} membre(s) · ${D().events.length} événement(s)</div>
+  <div style="position:relative;margin-bottom:12px">
+    <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px">🔍</span>
+    <input style="width:100%;padding:11px 12px 11px 36px;border-radius:11px;border:1.5px solid var(--border);background:var(--card);font-family:'Outfit',sans-serif;font-size:13px;outline:none" placeholder="Rechercher…" value="${S.search}" oninput="S.search=this.value;render()"/>
+  </div>
+  <div class="fpills">
+    <button class="fpill on" id="fp-all" onclick="setRhFilter('all')">Tous (${members.length})</button>
+    ${Object.entries(ROLES).map(([k,r])=>{const cnt=members.filter(m=>m.role===k).length;return cnt?`<button class="fpill" id="fp-${k}" onclick="setRhFilter('${k}')">${r.ico} ${r.label} (${cnt})</button>`:''}).join('')}
+  </div>
+  ${!filtered.length?`<div class="card cp"><div class="empty"><div style="font-size:36px">👥</div><div style="font-weight:700;margin-top:8px">${members.length?'Aucun résultat':'Aucun membre'}</div></div></div>`:
+  filtered.map(m=>{
+    const r=ROLES[m.role]||ROLES.chauffeur;
+    const evts=getMemberEvts(m.id);
+    const ret=evts.filter(e=>e.type==='retard').length;
+    const abs=evts.filter(e=>e.type==='absence').length;
+    const today=todayISO();
+    const enMaladie=evts.some(e=>e.type==='maladie'&&e.dateDebut&&e.dateFin&&today>=e.dateDebut&&today<=e.dateFin);
+    return`<div style="background:var(--card);border-radius:var(--r);border:1px solid var(--border);padding:14px;margin-bottom:10px;box-shadow:var(--shadow);position:relative;overflow:hidden;cursor:pointer" onclick="go('member_detail','${m.id}')">
+      <div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:${r.color}"></div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,${r.color},${r.color}99);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;flex-shrink:0">${initials(m.nom)}</div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            <div style="font-weight:700;font-size:14px">${m.nom}</div>
+            ${enMaladie?`<span style="background:#ede9fe;color:#7c3aed;font-size:10px;padding:2px 7px;border-radius:20px;font-weight:700">🏥 Arrêt</span>`:''}
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">${r.ico} ${r.label} · ${CONTRATS[m.contrat]||'—'} · ${m.matricule||'—'}</div>
+          <div style="display:flex;gap:5px;margin-top:6px;flex-wrap:wrap">
+            ${ret?`<span style="background:#fef3c7;color:#f5a623;font-size:10px;padding:2px 7px;border-radius:20px;font-weight:600">⏰ ${ret}</span>`:''}
+            ${abs?`<span style="background:#fee2e2;color:#ef4444;font-size:10px;padding:2px 7px;border-radius:20px;font-weight:600">✗ ${abs}</span>`:''}
+            ${!ret&&!abs?`<span style="background:#dcfce7;color:#22c55e;font-size:10px;padding:2px 7px;border-radius:20px;font-weight:600">✓ RAS</span>`:''}
+          </div>
+        </div>
+        <div style="color:var(--muted)">›</div>
+      </div>
+    </div>`;}).join('')}`;
+}
+
+function setRhFilter(f){
+  S.filter=f;
+  document.querySelectorAll('.fpill').forEach(p=>p.classList.remove('on'));
+  const el=document.getElementById('fp-'+(f==='all'?'all':f));if(el)el.classList.add('on');
+  // Filtrer visuellement
+  const members=D().members.filter(m=>f==='all'||m.role===f);
+  document.getElementById('app').innerHTML=rRH();
+}
+
+// MEMBER DETAIL
+function rMemberDetail(){
+  const m=getMember(S.selId);if(!m){go('rh');return'';}
+  const r=ROLES[m.role]||ROLES.chauffeur;
+  const allEvts=getMemberEvts(m.id);
+  const evts=allEvts.filter(e=>S.filter==='all'||e.type===S.filter);
+  const today=todayISO();
+
+  // Stats paie du mois
+  const tourneesMois=D().tournees.filter(t=>{
+    const d=new Date(t.date);
+    return String(t.memberId)===String(m.id)&&d.getMonth()===new Date().getMonth()&&d.getFullYear()===new Date().getFullYear();
+  });
+  const nbPleines=tourneesMois.filter(t=>t.statut==='parti'||t.statut==='retour').length;
+  const nbDemis=tourneesMois.filter(t=>t.statut==='demi').length;
+  const totalMois=nbPleines*TARIFS.pleine+nbDemis*TARIFS.demi;
+
+  return`
+  <button class="back" onclick="go('rh')">← Retour</button>
+  <div style="background:linear-gradient(135deg,var(--night),var(--night2));color:#fff;border-radius:var(--r);padding:18px;margin-bottom:12px;display:flex;align-items:center;gap:14px">
+    <div style="width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,${r.color},${r.color}88);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900">${initials(m.nom)}</div>
+    <div style="flex:1">
+      <div style="font-size:17px;font-weight:800">${m.nom}</div>
+      <div style="font-size:11px;opacity:.5;margin-top:3px">${r.ico} ${r.label} · ${CONTRATS[m.contrat]||'—'} · ${m.matricule||'—'}<br>${m.groupe?GROUPES[m.groupe]:''} ${m.telephone?'· 📞 '+m.telephone:''}</div>
+    </div>
+    ${currentRole==='dispatcher'?`<button class="btn btn-ghost btn-sm" onclick="editMember('${m.id}')" style="color:#fff;border-color:#ffffff30">✏️</button>`:''}
+  </div>
+
+  <!-- Paie du mois -->
+  <div class="paie-card" style="margin-bottom:12px">
+    <div style="font-size:12px;opacity:.5">Paie ${MOIS[new Date().getMonth()]}</div>
+    <div class="paie-total">${fmtEuro(totalMois)}</div>
+    <div style="font-size:12px;opacity:.6">${nbPleines} tournée(s) × ${fmtEuro(TARIFS.pleine)} + ${nbDemis} demi(s) × ${fmtEuro(TARIFS.demi)}</div>
+  </div>
+
+  <!-- Stats RH -->
+  <div class="sgrid4" style="margin-bottom:12px">
+    ${['retard','absence','maladie','conge'].map(k=>`<div class="scard">
+      <div style="font-size:18px">${EVT[k].ico}</div>
+      <div style="font-size:20px;font-weight:900;color:${EVT[k].color}">${allEvts.filter(e=>e.type===k).length}</div>
+      <div style="font-size:9px;color:var(--muted);font-weight:700;text-transform:uppercase">${EVT[k].label}</div>
+    </div>`).join('')}
+  </div>
+
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+    <div style="font-weight:800;font-size:14px">Historique RH</div>
+    ${currentRole==='dispatcher'?`<button class="btn btn-amber btn-sm" onclick="openAddEvtFor('${m.id}')">+ Ajouter</button>`:''}
+  </div>
+  <div class="fpills">
+    <button class="fpill on" id="fp-all" onclick="setMemberFilter('all')">Tous (${allEvts.length})</button>
+    ${Object.entries(EVT).map(([k,t])=>{const cnt=allEvts.filter(e=>e.type===k).length;return cnt?`<button class="fpill" id="fp-${k}" onclick="setMemberFilter('${k}')">${t.ico} ${t.label} (${cnt})</button>`:''}).join('')}
+  </div>
+  ${!evts.length?`<div class="card cp"><div class="empty"><div style="font-size:32px">📋</div><div style="font-weight:700;margin-top:8px">Aucun événement</div></div></div>`:
+    [...evts].reverse().map(e=>rEvtItem(e,true)).join('')}
+  ${currentRole==='dispatcher'?`<div class="dzone"><div style="font-size:12px;font-weight:700;color:#dc2626;margin-bottom:8px">⚠ Suppression</div>
+    <button class="btn btn-red btn-sm" onclick="delMember('${m.id}')">🗑 Supprimer ce membre</button></div>`:''}`;
+}
+
+function setMemberFilter(f){S.filter=f;document.getElementById('app').innerHTML=rMemberDetail();}
+
+function rEvtItem(evt,showBtn=false){
+  const t=EVT[evt.type]||{label:evt.type,color:'#999',bg:'#f3f4f6',ico:'📌'};
+  const hasPeriode=t.hasPeriode&&(evt.dateDebut||evt.dateFin);
+  const jours=hasPeriode?diffDays(evt.dateDebut,evt.dateFin):null;
+  return`<div class="evt">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
+      <div style="flex:1;min-width:0">
+        <span class="ebadge" style="background:${t.bg};color:${t.color}">${t.ico} ${t.label}</span>
+        ${hasPeriode?`<div class="periode-badge">📅 ${fmtDate(evt.dateDebut)} → ${fmtDate(evt.dateFin)} ${jours?`<span style="background:#bbf7d0;color:#15803d;padding:1px 5px;border-radius:8px;font-size:10px">${jours}j</span>`:''}</div>`:
+        `<div style="font-size:11px;color:var(--muted);margin-top:4px;font-family:'JetBrains Mono',monospace">📅 ${fmtDate(evt.date)} ${evt.duree?'· '+evt.duree:''}</div>`}
+        ${evt.motif?`<div style="font-size:12px;color:#444;margin-top:5px;line-height:1.5">${evt.motif}</div>`:''}
+        ${evt.certifUrl?`<a href="${evt.certifUrl}" target="_blank" style="display:inline-flex;align-items:center;gap:5px;background:#eff6ff;color:var(--blue);padding:5px 10px;border-radius:8px;font-size:11px;font-weight:600;text-decoration:none;margin-top:6px">📎 Certificat</a>`:''}
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0">
+        <span class="statut-tag" style="background:${evt.statut==='Non justifié'?'#fee2e2':'#d1fae5'};color:${evt.statut==='Non justifié'?'#dc2626':'#059669'}">${evt.statut}</span>
+        ${currentRole==='dispatcher'?`<button class="btn btn-ghost btn-sm" onclick="delEvt('${evt.id}')" style="font-size:10px;padding:3px 8px;color:#ef4444">🗑</button>`:''}
+      </div>
+    </div>
+  </div>`;
+}
+
+// ══════════════════════════════════════════════
+// PAIE
+// ══════════════════════════════════════════════
+function rPaie(){
+  const members=D().members.filter(m=>['chauffeur','chauffeurplus'].includes(m.role));
+  const month=S.paieMonth;const year=S.paieYear;
+  const monthLabel=`${MOIS[month]} ${year}`;
+  const daysInMonth=new Date(year,month+1,0).getDate();
+
+  // Calcul pour chaque chauffeur
+  const paies=members.map(m=>{
+    let pleines=0,demis=0;
+    for(let d=1;d<=daysInMonth;d++){
+      const ds=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const t=getTourneeJour(m.id,ds);
+      if(t?.statut==='parti'||t?.statut==='retour') pleines++;
+      else if(t?.statut==='demi') demis++;
+    }
+    const total=pleines*TARIFS.pleine+demis*TARIFS.demi;
+    return{m,pleines,demis,total};
+  }).sort((a,b)=>b.total-a.total);
+
+  const totalGeneral=paies.reduce((s,p)=>s+p.total,0);
+  const monthOpts=MOIS.map((m,i)=>`<option value="${i}" ${i===month?'selected':''}>${m}</option>`).join('');
+  const yearOpts=[2024,2025,2026].map(y=>`<option value="${y}" ${y===year?'selected':''}>${y}</option>`).join('');
+
+  return`
+  <div class="stitle">💰 Paie mensuelle</div>
+  <div class="ssub">75€ tournée · 40€ demi-tournée</div>
+
+  <div style="display:flex;gap:8px;margin-bottom:14px">
+    <select class="fc" onchange="S.paieMonth=parseInt(this.value);render()">${monthOpts}</select>
+    <select class="fc" style="width:100px" onchange="S.paieYear=parseInt(this.value);render()">${yearOpts}</select>
+  </div>
+
+  <!-- Total général -->
+  <div class="paie-card">
+    <div style="font-size:12px;opacity:.5">Masse salariale — ${monthLabel}</div>
+    <div class="paie-total">${fmtEuro(totalGeneral)}</div>
+    <div style="font-size:12px;opacity:.6">${members.length} chauffeur(s) · ${paies.reduce((s,p)=>s+p.pleines,0)} tournée(s) + ${paies.reduce((s,p)=>s+p.demis,0)} demi(s)</div>
+  </div>
+
+  <!-- Par chauffeur -->
+  ${paies.map(({m,pleines,demis,total})=>{
+    const r=ROLES[m.role]||ROLES.chauffeur;
+    const pct=totalGeneral?Math.round(total/totalGeneral*100):0;
+    return`<div class="card cp" style="margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <div style="width:38px;height:38px;border-radius:10px;background:${r.color};display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;flex-shrink:0">${initials(m.nom)}</div>
+        <div style="flex:1">
+          <div style="font-weight:700;font-size:13px">${m.nom}</div>
+          <div style="font-size:11px;color:var(--muted)">${CONTRATS[m.contrat]||'—'} · ${m.matricule||'—'}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:18px;font-weight:900;color:var(--green)">${fmtEuro(total)}</div>
+          <div style="font-size:10px;color:var(--muted)">${pct}% du total</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;font-size:12px">
+        <span style="background:#dcfce7;color:#15803d;padding:3px 9px;border-radius:20px;font-weight:600">🚛 ${pleines} tournée(s)</span>
+        ${demis?`<span style="background:#fef3c7;color:#92400e;padding:3px 9px;border-radius:20px;font-weight:600">½ ${demis} demi(s)</span>`:''}
+        ${!pleines&&!demis?`<span style="background:#f3f4f6;color:#6b7280;padding:3px 9px;border-radius:20px;font-weight:600">Aucune tournée</span>`:''}
+      </div>
+      <div style="height:6px;background:#f0ede8;border-radius:3px;overflow:hidden;margin-top:10px">
+        <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,var(--green),#16a34a);border-radius:3px"></div>
+      </div>
+      ${currentRole==='dispatcher'?`<div class="btn-row" style="margin-top:10px">
+        <button class="btn btn-ghost btn-sm" onclick="genFichePaie('${m.id}','${month}','${year}')" style="flex:1">📄 Fiche PDF</button>
+        <button class="btn btn-ghost btn-sm" onclick="genFacture('${m.id}','${month}','${year}')" style="flex:1;display:${m.contrat==='auto'?'flex':'none'}">📋 Facture</button>
+      </div>`:''}
+    </div>`;}).join('')}
+
+  ${currentRole==='dispatcher'?`<button class="btn btn-night" onclick="exportPaiePDF()">📄 Exporter tout en PDF</button>`:''}`;
+}
+
+window.genFichePaie=function(memberId,month,year){
+  const m=getMember(memberId);if(!m)return;
+  const{jsPDF}=window.jspdf;if(!jsPDF){toast('PDF non disponible');return;}
+  const monthLabel=`${MOIS[month]} ${year}`;
+  const daysInMonth=new Date(year,parseInt(month)+1,0).getDate();
+  let pleines=0,demis=0,details=[];
+  for(let d=1;d<=daysInMonth;d++){
+    const ds=`${year}-${String(parseInt(month)+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const t=getTourneeJour(m.id,ds);
+    if(t?.statut==='parti'||t?.statut==='retour'){pleines++;details.push({date:fmtDate(ds),type:'Tournée complète',montant:TARIFS.pleine});}
+    else if(t?.statut==='demi'){demis++;details.push({date:fmtDate(ds),type:'Demi-tournée',montant:TARIFS.demi});}
+  }
+  const total=pleines*TARIFS.pleine+demis*TARIFS.demi;
+  const doc=new jsPDF();
+  let y=20;
+  doc.setFillColor(15,25,35);doc.rect(0,0,210,30,'F');
+  doc.setTextColor(255,255,255);doc.setFontSize(14);doc.setFont('helvetica','bold');
+  doc.text('TransiTrack — TLC Services',14,12);
+  doc.setFontSize(10);doc.text('Fiche de paie — '+monthLabel,14,22);
+  y=42;doc.setTextColor(15,25,35);
+  doc.setFontSize(13);doc.text(`${m.nom}`,14,y);y+=7;
+  doc.setFontSize(10);doc.setFont('helvetica','normal');
+  doc.text(`Rôle : ${ROLES[m.role]?.label||'—'} · Contrat : ${CONTRATS[m.contrat]||'—'} · Matricule : ${m.matricule||'—'}`,14,y);y+=12;
+  doc.setDrawColor(200,200,200);doc.line(14,y,196,y);y+=8;
+  details.forEach((d,i)=>{
+    if(i%2===0){doc.setFillColor(248,247,245);doc.rect(14,y-4,182,8,'F');}
+    doc.text(d.date,16,y);doc.text(d.type,60,y);
+    doc.setFont('helvetica','bold');doc.text(d.montant+'€',180,y,'right');
+    doc.setFont('helvetica','normal');y+=8;
+  });
+  y+=4;doc.line(14,y,196,y);y+=8;
+  doc.setFont('helvetica','bold');doc.setFontSize(12);
+  doc.text('TOTAL',14,y);doc.text(total+'€',180,y,'right');
+  doc.setFontSize(8);doc.setTextColor(150,150,150);doc.setFont('helvetica','normal');
+  doc.text(`Généré le ${new Date().toLocaleDateString('fr-FR')} — TransiTrack TLC Services`,14,285);
+  doc.save(`Paie_${m.nom.replace(' ','_')}_${monthLabel}.pdf`);
+  toast('✅ Fiche PDF générée !');
+};
+
+window.genFacture=function(memberId,month,year){
+  const m=getMember(memberId);if(!m)return;
+  const{jsPDF}=window.jspdf;if(!jsPDF){toast('PDF non disponible');return;}
+  const monthLabel=`${MOIS[month]} ${year}`;
+  const daysInMonth=new Date(year,parseInt(month)+1,0).getDate();
+  let pleines=0,demis=0;
+  for(let d=1;d<=daysInMonth;d++){
+    const ds=`${year}-${String(parseInt(month)+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const t=getTourneeJour(m.id,ds);
+    if(t?.statut==='parti'||t?.statut==='retour') pleines++;
+    else if(t?.statut==='demi') demis++;
+  }
+  const total=pleines*TARIFS.pleine+demis*TARIFS.demi;
+  const doc=new jsPDF();
+  let y=20;
+  doc.setFillColor(15,25,35);doc.rect(0,0,210,30,'F');
+  doc.setTextColor(255,255,255);doc.setFontSize(14);doc.setFont('helvetica','bold');
+  doc.text('FACTURE — '+monthLabel,14,18);
+  y=42;doc.setTextColor(15,25,35);
+  doc.setFontSize(11);doc.text('Prestataire : '+m.nom,14,y);y+=7;
+  doc.text('Client : TLC Services — Agence de Roncq',14,y);y+=14;
+  doc.setFillColor(245,166,35);doc.rect(14,y-4,182,8,'F');
+  doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');
+  doc.text('Prestation',16,y);doc.text('Qté',120,y);doc.text('PU',155,y);doc.text('Total',180,y,'right');
+  y+=10;doc.setTextColor(15,25,35);doc.setFont('helvetica','normal');
+  if(pleines){doc.text('Tournée complète Vinted Go',16,y);doc.text(String(pleines),120,y);doc.text('75,00€',155,y);doc.text(fmtEuro(pleines*75),180,y,'right');y+=8;}
+  if(demis){doc.text('Demi-tournée Vinted Go',16,y);doc.text(String(demis),120,y);doc.text('40,00€',155,y);doc.text(fmtEuro(demis*40),180,y,'right');y+=8;}
+  y+=4;doc.line(14,y,196,y);y+=8;
+  doc.setFont('helvetica','bold');doc.text('TOTAL HT',14,y);doc.text(fmtEuro(total),180,y,'right');y+=7;
+  doc.text('TVA (0% — auto-entrepreneur)',14,y);doc.text('0,00€',180,y,'right');y+=7;
+  doc.setFontSize(13);doc.text('TOTAL TTC',14,y);doc.text(fmtEuro(total),180,y,'right');
+  doc.setFontSize(8);doc.setTextColor(150,150,150);doc.setFont('helvetica','normal');
+  doc.text('TVA non applicable, art. 293B du CGI',14,y+10);
+  doc.text(`Généré le ${new Date().toLocaleDateString('fr-FR')} — TransiTrack`,14,285);
+  doc.save(`Facture_${m.nom.replace(' ','_')}_${monthLabel}.pdf`);
+  toast('✅ Facture PDF générée !');
+};
+
+window.exportPaiePDF=function(){
+  const{jsPDF}=window.jspdf;if(!jsPDF){toast('PDF non disponible');return;}
+  const month=S.paieMonth;const year=S.paieYear;
+  const monthLabel=`${MOIS[month]} ${year}`;
+  const members=D().members.filter(m=>['chauffeur','chauffeurplus'].includes(m.role));
+  const daysInMonth=new Date(year,month+1,0).getDate();
+  const doc=new jsPDF();let y=40;
+  doc.setFillColor(15,25,35);doc.rect(0,0,210,30,'F');
+  doc.setTextColor(255,255,255);doc.setFontSize(14);doc.setFont('helvetica','bold');
+  doc.text('Récap Paie — '+monthLabel,14,18);
+  doc.setTextColor(15,25,35);doc.setFontSize(10);
+  members.forEach(m=>{
+    let pleines=0,demis=0;
+    for(let d=1;d<=daysInMonth;d++){
+      const ds=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const t=getTourneeJour(m.id,ds);
+      if(t?.statut==='parti'||t?.statut==='retour') pleines++;
+      else if(t?.statut==='demi') demis++;
+    }
+    const total=pleines*TARIFS.pleine+demis*TARIFS.demi;
+    doc.setFont('helvetica','bold');doc.text(m.nom,14,y);
+    doc.setFont('helvetica','normal');doc.text(`${pleines}T + ${demis}D`,120,y);
+    doc.text(fmtEuro(total),180,y,'right');y+=8;
+    if(y>270){doc.addPage();y=20;}
+  });
+  doc.save(`Recap_Paie_${monthLabel}.pdf`);
+  toast('✅ PDF généré !');
+};
+
+// ══════════════════════════════════════════════
+// WHATSAPP
+// ══════════════════════════════════════════════
+function rWhatsApp(){
+  const types=[
+    {k:'planning',ico:'📅',label:'Planning du jour'},
+    {k:'depart',ico:'🚛',label:'Message départ'},
+    {k:'rappel',ico:'🔔',label:'Rappel / Consigne'},
+    {k:'incident',ico:'🚨',label:'Alerte incident'},
+    {k:'bilan_jour',ico:'📊',label:'Bilan de journée'},
+    {k:'rapport_hebdo',ico:'📈',label:'Rapport hebdo (Mickael)'},
+  ];
+  const msg=genWAMessage(S.waType);
+  return`
+  <div class="stitle">💬 WhatsApp</div>
+  <div class="ssub">Générateur de messages</div>
+  <div class="chips" style="margin-bottom:14px">
+    ${types.map(t=>`<button class="chip ${S.waType===t.k?'on':''}" onclick="S.waType='${t.k}';render()">${t.ico} ${t.label}</button>`).join('')}
+  </div>
+  <div class="wa-msg">${msg}</div>
+  <div class="btn-row">
+    <button class="btn btn-green" onclick="copyWA()" style="flex:1">📋 Copier</button>
+    <button class="btn btn-night" onclick="openWA()" style="flex:1">📱 Ouvrir WhatsApp</button>
+  </div>`;
+}
+
+function genWAMessage(type){
+  const today=new Date();
+  const dateStr=today.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
+  const members=D().members.filter(m=>['chauffeur','chauffeurplus'].includes(m.role));
+  const tournees=D().tournees.filter(t=>t.date===todayISO());
+
+  if(type==='planning'){
+    const g1=members.filter(m=>m.groupe==='g1'||!m.groupe);
+    const g2=members.filter(m=>m.groupe==='g2');
+    return`🚌 *PLANNING DU JOUR — ${dateStr.toUpperCase()}*
+TLC Services — Agence de Roncq
+
+🕗 *GROUPE 1 — 8h30*
+${g1.map(m=>'• '+m.nom).join('\n')||'Aucun chauffeur'}
+
+🕘 *GROUPE 2 — 9h15*
+${g2.map(m=>'• '+m.nom).join('\n')||'Aucun chauffeur'}
+
+📦 Vérifiez vos sacs avant départ
+✅ EPI obligatoires
+📱 Restez joignables pendant la tournée
+
+— Dispatcher TLC Roncq`;
+  }
+
+  if(type==='depart'){
+    const partis=tournees.filter(t=>t.statut==='parti'||t.statut==='retour');
+    const absents=tournees.filter(t=>t.statut==='absence');
+    return`🚛 *DÉPARTS — ${dateStr.toUpperCase()}*
+
+✅ *Partis (${partis.length})*
+${partis.map(t=>{const m=getMember(t.memberId);return m?'• '+m.nom:''}).filter(Boolean).join('\n')||'Aucun départ enregistré'}
+
+${absents.length?`❌ *Absents (${absents.length})*\n${absents.map(t=>{const m=getMember(t.memberId);return m?'• '+m.nom:''}).filter(Boolean).join('\n')}`:''}
+
+Bonne tournée à tous 💪
+— Dispatcher TLC Roncq`;
+  }
+
+  if(type==='rappel'){
+    return`🔔 *RAPPEL IMPORTANT*
+TLC Services — ${dateStr}
+
+📋 Points à vérifier :
+• EPI obligatoires (gilet, chaussures)
+• Sacs correctement triés avant départ
+• Application Vinted Go activée
+• Téléphone chargé et joignable
+• En cas de problème → appeler le dispatcher
+
+Merci à tous 🙏
+— Dispatcher TLC Roncq`;
+  }
+
+  if(type==='incident'){
+    const incidents=tournees.filter(t=>t.incident||t.sacsOublies);
+    return`🚨 *ALERTE INCIDENT — ${dateStr.toUpperCase()}*
+TLC Services Roncq
+
+${incidents.length?incidents.map(t=>{const m=getMember(t.memberId);return`⚠ ${m?m.nom:'?'} : ${t.incident||''} ${t.sacsOublies?'— Sac oublié: '+t.sacsOublies:''}`;}).join('\n'):'Aucun incident enregistré'}
+
+— Dispatcher TLC Roncq`;
+  }
+
+  if(type==='bilan_jour'){
+    const partis=tournees.filter(t=>t.statut==='parti'||t.statut==='retour'||t.statut==='demi').length;
+    const retours=tournees.filter(t=>t.statut==='retour').length;
+    const absents=tournees.filter(t=>t.statut==='absence').length;
+    const abandons=tournees.filter(t=>t.statut==='abandon').length;
+    const sacsOublies=tournees.filter(t=>t.sacsOublies).length;
+    return`📊 *BILAN DE JOURNÉE — ${dateStr.toUpperCase()}*
+TLC Services — Agence de Roncq
+
+✅ Départs effectués : ${partis}/${members.length}
+🏁 Retours confirmés : ${retours}
+❌ Absences : ${absents}
+🔴 Abandons : ${abandons}
+📦 Sacs oubliés : ${sacsOublies}
+
+${abandons>0||absents>0?`⚠ Points d'attention :\n${tournees.filter(t=>t.statut==='abandon').map(t=>{const m=getMember(t.memberId);return m?'• Abandon : '+m.nom:''}).filter(Boolean).join('\n')}`:'✅ Journée sans incident majeur'}
+
+— Dispatcher TLC Roncq`;
+  }
+
+  if(type==='rapport_hebdo'){
+    const lundi=new Date();lundi.setDate(lundi.getDate()-lundi.getDay()+1);
+    const vendredi=new Date(lundi);vendredi.setDate(lundi.getDate()+4);
+    const semaineEvts=D().events.filter(e=>{const d=new Date(e.date||e.dateDebut||'');return d>=lundi&&d<=vendredi;});
+    return`📈 *RAPPORT HEBDOMADAIRE*
+TLC Services — Agence de Roncq
+Semaine du ${lundi.toLocaleDateString('fr-FR')} au ${vendredi.toLocaleDateString('fr-FR')}
+
+👥 Équipe : ${members.length} chauffeur(s)
+
+📋 *RH de la semaine :*
+• Retards : ${semaineEvts.filter(e=>e.type==='retard').length}
+• Absences : ${semaineEvts.filter(e=>e.type==='absence').length}
+• Arrêts maladie : ${semaineEvts.filter(e=>e.type==='maladie').length}
+• Congés : ${semaineEvts.filter(e=>e.type==='conge').length}
+
+🚛 *Tournées :*
+• Total événements semaine : ${semaineEvts.length}
+
+Cordialement,
+Omar — Dispatcher TLC Roncq`;
+  }
+  return'';
+}
+
+window.copyWA=function(){
+  const msg=genWAMessage(S.waType);
+  navigator.clipboard.writeText(msg).then(()=>toast('✅ Message copié !')).catch(()=>{
+    const t=document.createElement('textarea');t.value=msg;document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);toast('✅ Message copié !');
+  });
+};
+window.openWA=function(){
+  const msg=encodeURIComponent(genWAMessage(S.waType));
+  window.open('https://wa.me/?text='+msg,'_blank');
+};
+window.genWADepart=function(){S.waType='depart';go('whatsapp');};
+
+// ══════════════════════════════════════════════
+// RAPPORT MATIN
+// ══════════════════════════════════════════════
+function rRapportMatin(){
+  return`
+  <div class="stitle">📋 Rapport Matin</div>
+  <div class="ssub">${new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</div>
+
+  <!-- DÉPARTS -->
+  <div class="card cp">
+    <div style="font-weight:800;font-size:14px;margin-bottom:12px">🚛 Départs chauffeurs</div>
+    <div class="frow">
+      <div><label class="fl">Heure GOFO</label><input class="fc" id="rm-gofo" placeholder="8h00" value="8h00"/></div>
+      <div><label class="fl">Heure VINTED</label><input class="fc" id="rm-vinted" placeholder="9h45" value="9h45"/></div>
+    </div>
+    <label class="fl">Tournées récupérées</label>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <button class="rm-chip ok" id="rm-tournees-oui" onclick="rmToggle2('tournees','oui','non')" style="flex:1;padding:9px;border-radius:10px;border:2px solid #22c55e;background:#dcfce7;color:#15803d;font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;cursor:pointer">✅ OUI</button>
+      <button class="rm-chip" id="rm-tournees-non" onclick="rmToggle2('tournees','non','oui')" style="flex:1;padding:9px;border-radius:10px;border:2px solid var(--border);background:var(--bg);color:var(--muted);font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;cursor:pointer">❌ NON</button>
+    </div>
+    <label class="fl">Départs effectués</label>
+    <div style="display:flex;gap:8px;margin-bottom:4px">
+      <button class="rm-chip ok" id="rm-departs-oui" onclick="rmToggle2('departs','oui','non')" style="flex:1;padding:9px;border-radius:10px;border:2px solid #22c55e;background:#dcfce7;color:#15803d;font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;cursor:pointer">✅ OUI</button>
+      <button class="rm-chip" id="rm-departs-non" onclick="rmToggle2('departs','non','oui')" style="flex:1;padding:9px;border-radius:10px;border:2px solid var(--border);background:var(--bg);color:var(--muted);font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;cursor:pointer">❌ NON</button>
+    </div>
+  </div>
+
+  <!-- NETTOYAGE -->
+  <div class="card cp">
+    <div style="font-weight:800;font-size:14px;margin-bottom:12px">🧹 Nettoyage & Rangement</div>
+    <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px">
+      ${[
+        {id:'rm-depot-ok',     label:'✅ Dépôt OK',          cls:'ok'},
+        {id:'rm-bureau-ok',    label:'✅ Bureau OK',          cls:'ok'},
+        {id:'rm-cartons-ok',   label:'✅ Cartons évacués',    cls:'ok'},
+        {id:'rm-cartons-rng',  label:'⚠ Cartons rangés',     cls:'warn'},
+        {id:'rm-palettes-rng', label:'⚠ Palettes rangées',   cls:'warn'},
+        {id:'rm-bennes-full',  label:'🔴 Bennes pleines',     cls:'err'},
+      ].map(c=>`<button id="${c.id}" onclick="rmToggleChip('${c.id}','${c.cls}')"
+        style="padding:6px 12px;border-radius:20px;border:1.5px solid var(--border);background:var(--bg);color:#666;font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;cursor:pointer">${c.label}</button>`).join('')}
+    </div>
+    <label class="fl">Note nettoyage</label>
+    <textarea class="fc" id="rm-nettoyage-note" placeholder="Ex: Demande benne à effectuer…"></textarea>
+  </div>
+
+  <!-- FLUX -->
+  <div class="card cp">
+    <div style="font-weight:800;font-size:14px;margin-bottom:12px">⚙️ Flux & Organisation</div>
+    <label class="fl">Routes sorties</label>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <button id="rm-routes-ok" onclick="rmToggle2('routes','ok','pb')" style="flex:1;padding:9px;border-radius:10px;border:2px solid #22c55e;background:#dcfce7;color:#15803d;font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;cursor:pointer">✅ Toutes sorties</button>
+      <button id="rm-routes-pb" onclick="rmToggle2('routes','pb','ok')" style="flex:1;padding:9px;border-radius:10px;border:2px solid var(--border);background:var(--bg);color:var(--muted);font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;cursor:pointer">⚠ Problème</button>
+    </div>
+    <div class="frow">
+      <div>
+        <label class="fl">GOFO</label>
+        <div style="display:flex;gap:6px;margin-bottom:8px">
+          <button id="rm-gofo-ok" onclick="rmToggle2('gofo','ok','pb')" style="flex:1;padding:7px;border-radius:9px;border:2px solid #22c55e;background:#dcfce7;color:#15803d;font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;cursor:pointer">✅ RAS</button>
+          <button id="rm-gofo-pb" onclick="rmToggle2('gofo','pb','ok')" style="flex:1;padding:7px;border-radius:9px;border:2px solid var(--border);background:var(--bg);color:var(--muted);font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;cursor:pointer">⚠ PB</button>
+        </div>
+        <textarea class="fc" id="rm-gofo-note" placeholder="Détails GOFO…" style="min-height:55px"></textarea>
+      </div>
+      <div>
+        <label class="fl">VINTED</label>
+        <div style="display:flex;gap:6px;margin-bottom:8px">
+          <button id="rm-vinted-ok" onclick="rmToggle2('vinted','ok','pb')" style="flex:1;padding:7px;border-radius:9px;border:2px solid #22c55e;background:#dcfce7;color:#15803d;font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;cursor:pointer">✅ RAS</button>
+          <button id="rm-vinted-pb" onclick="rmToggle2('vinted','pb','ok')" style="flex:1;padding:7px;border-radius:9px;border:2px solid var(--border);background:var(--bg);color:var(--muted);font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;cursor:pointer">⚠ PB</button>
+        </div>
+        <textarea class="fc" id="rm-vinted-note" placeholder="Détails VINTED…" style="min-height:55px"></textarea>
+      </div>
+    </div>
+    <textarea class="fc" id="rm-flux-note" placeholder="Réorganisation, remplacement, autres infos..."></textarea>
+  </div>
+
+  <!-- ÉCARTS -->
+  <div class="card cp">
+    <div style="font-weight:800;font-size:14px;margin-bottom:12px">🚨 Écarts / Problèmes</div>
+    <label class="fl">Matériel de manutention</label>
+    <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px">
+      <button id="rm-tp-m-ok"  onclick="rmToggle2('tp-m','ok','abs')"  style="padding:6px 12px;border-radius:20px;border:2px solid #22c55e;background:#dcfce7;color:#15803d;font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;cursor:pointer">✅ Transpalette manuel OK</button>
+      <button id="rm-tp-m-abs" onclick="rmToggle2('tp-m','abs','ok')"  style="padding:6px 12px;border-radius:20px;border:1.5px solid var(--border);background:var(--bg);color:#666;font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;cursor:pointer">❌ Transpalette ABSENT</button>
+      <button id="rm-tp-e-ok"  onclick="rmToggle2('tp-e','ok','pb')"   style="padding:6px 12px;border-radius:20px;border:2px solid #22c55e;background:#dcfce7;color:#15803d;font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;cursor:pointer">✅ Transpalette élec. OK</button>
+      <button id="rm-tp-e-pb"  onclick="rmToggle2('tp-e','pb','ok')"   style="padding:6px 12px;border-radius:20px;border:1.5px solid var(--border);background:var(--bg);color:#666;font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;cursor:pointer">⚠ Transpalette défectueux</button>
+    </div>
+    <label class="fl">Autres écarts / problèmes</label>
+    <textarea class="fc" id="rm-ecarts-note" placeholder="Incidents, problèmes matériels…"></textarea>
+  </div>
+
+  <!-- REMARQUES & BESOINS -->
+  <div class="card cp">
+    <div style="font-weight:800;font-size:14px;margin-bottom:12px">💬 Remarques</div>
+    <textarea class="fc" id="rm-remarques" placeholder="Remarques générales, points d'attention…"></textarea>
+  </div>
+
+  <div class="card cp">
+    <div style="font-weight:800;font-size:14px;margin-bottom:12px">🛒 Besoins</div>
+    <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:10px">
+      ${[
+        {id:'rm-b-savon',  label:'🧴 Savon mains'},
+        {id:'rm-b-papier', label:'🧻 Papier WC'},
+        {id:'rm-b-scotch', label:'🎁 Scotch gris'},
+        {id:'rm-b-produit',label:'🧹 Produit WC'},
+        {id:'rm-b-gants',  label:'🧤 Gants'},
+      ].map(c=>`<button id="${c.id}" onclick="rmToggleChip('${c.id}','ok')"
+        style="padding:6px 12px;border-radius:20px;border:1.5px solid var(--border);background:var(--bg);color:#666;font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;cursor:pointer">${c.label}</button>`).join('')}
+    </div>
+    <input class="fc" id="rm-besoins-autres" placeholder="Autres besoins…"/>
+  </div>
+
+  <!-- CONSIGNES QUAI -->
+  <div class="card cp">
+    <div style="font-weight:800;font-size:14px;margin-bottom:12px">📋 Consignes Agent de Quai après-midi</div>
+    ${[
+      {id:'rm-c1', val:'Vérifier la fonctionnalité des téléphones récupérés'},
+      {id:'rm-c2', val:'Vérifier systématiquement le gazole de tous les véhicules'},
+      {id:'rm-c3', val:'Récupérer l\'ensemble des clés des véhicules au retour des chauffeurs'},
+      {id:'rm-c4', val:'Vérifier l\'état général des véhicules (carrosserie, pneus, voyants, dégâts éventuels)'},
+      {id:'rm-c5', val:'Rappeler aux chauffeurs de mettre fin à leurs tournées'},
+      {id:'rm-c6', val:'Charger les cages au maximum afin d\'en économiser pour le lendemain'},
+      {id:'rm-c7', val:'Veiller au respect strict du port des EPI par toute personne entrant dans l\'entrepôt'},
+    ].map((c,i)=>`<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:10px">
+      <div style="width:22px;height:22px;border-radius:50%;background:var(--night);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;margin-top:10px">${i+1}</div>
+      <textarea class="fc" id="${c.id}" style="min-height:50px;margin-bottom:0">${c.val}</textarea>
+    </div>`).join('')}
+  </div>
+
+  <!-- RAPPEL & OBJECTIF -->
+  <div class="card cp">
+    <div style="font-weight:800;font-size:14px;margin-bottom:12px">🎯 Rappel & Objectif</div>
+    <label class="fl">Rappel</label>
+    <textarea class="fc" id="rm-rappel">Organisation maintenue, vigilance sur le tri et le rangement. Communication et rigueur sont essentielles pour la fluidité des opérations !</textarea>
+    <label class="fl">Objectif</label>
+    <input class="fc" id="rm-objectif" value="Ensemble, assurons la sécurité, la qualité et la performance !"/>
+  </div>
+
+  <!-- BOUTONS EXPORT -->
+  <button class="btn btn-night" onclick="genRapportImage()" style="margin-bottom:10px">👁 Générer & Aperçu</button>
+  <div class="btn-row" style="margin-bottom:20px">
+    <button class="btn btn-blue" onclick="exportRapportPNG()" style="flex:1">📸 Télécharger PNG</button>
+    <button class="btn btn-green" onclick="exportRapportWA()" style="flex:1">💬 Copier WhatsApp</button>
+  </div>
+
+  <!-- APERÇU RAPPORT -->
+  <div id="rm-apercu" style="display:none;margin-bottom:20px"></div>`;
+}
+
+// ── HELPERS RAPPORT MATIN ──
+window.rmToggle2=function(prefix,a,b){
+  const ea=document.getElementById('rm-'+prefix+'-'+a);
+  const eb=document.getElementById('rm-'+prefix+'-'+b);
+  if(!ea||!eb)return;
+  const aActive=ea.style.borderColor==='rgb(34, 197, 94)'||ea.style.borderColor==='rgb(239, 68, 68)';
+  const isOkA=a==='oui'||a==='ok';
+  const isErrA=a==='non'||a==='abs'||a==='pb';
+  if(aActive){
+    ea.style.cssText+=';border-color:var(--border)!important;background:var(--bg)!important;color:#666!important';
+  } else {
+    if(isOkA){ea.style.borderColor='#22c55e';ea.style.background='#dcfce7';ea.style.color='#15803d';}
+    else{ea.style.borderColor='#ef4444';ea.style.background='#fee2e2';ea.style.color='#dc2626';}
+    eb.style.borderColor='var(--border)';eb.style.background='var(--bg)';eb.style.color='#666';
+  }
+};
+window.rmToggleChip=function(id,type){
+  const el=document.getElementById(id);if(!el)return;
+  const isActive=el.style.borderColor==='rgb(34, 197, 94)'||el.style.borderColor==='rgb(239, 68, 68)'||el.style.borderColor==='rgb(245, 166, 35)';
+  if(isActive){el.style.borderColor='var(--border)';el.style.background='var(--bg)';el.style.color='#666';}
+  else{
+    if(type==='ok'){el.style.borderColor='#22c55e';el.style.background='#dcfce7';el.style.color='#15803d';}
+    else if(type==='warn'){el.style.borderColor='#f5a623';el.style.background='#fef3c7';el.style.color='#92400e';}
+    else{el.style.borderColor='#ef4444';el.style.background='#fee2e2';el.style.color='#dc2626';}
+  }
+};
+
+function rmIsActive(id){
+  const el=document.getElementById(id);if(!el)return false;
+  return el.style.borderColor==='rgb(34, 197, 94)'||el.style.borderColor==='rgb(239, 68, 68)'||el.style.borderColor==='rgb(245, 166, 35)';
+}
+function rmIsOk(id){const el=document.getElementById(id);return el&&el.style.borderColor==='rgb(34, 197, 94)';}
+function rmIsErr(id){const el=document.getElementById(id);return el&&el.style.borderColor==='rgb(239, 68, 68)';}
+
+function rmItem(type,text){
+  const cfg={ok:{bg:'#dcfce7',color:'#15803d',ico:'✓'},warn:{bg:'#fef3c7',color:'#92400e',ico:'⚠'},err:{bg:'#fee2e2',color:'#dc2626',ico:'✗'},arrow:{bg:'#ffedd5',color:'#c2410c',ico:'→'}};
+  const c=cfg[type]||cfg.ok;
+  return`<div style="display:flex;align-items:flex-start;gap:7px;margin-bottom:8px;font-size:12px;line-height:1.4">
+    <div style="width:18px;height:18px;border-radius:50%;background:${c.bg};color:${c.color};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;margin-top:1px">${c.ico}</div>
+    <div>${text}</div>
+  </div>`;
+}
+
+window.genRapportImage=function(){
+  const d=new Date();
+  const days=['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+  const dateStr=`${days[d.getDay()]} ${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getFullYear()}`;
+  const gofo=document.getElementById('rm-gofo')?.value||'—';
+  const vinted=document.getElementById('rm-vinted')?.value||'—';
+  const tourOk=rmIsOk('rm-tournees-oui');
+  const depOk=rmIsOk('rm-departs-oui');
+
+  // Nettoyage items
+  const nItems=[];
+  if(rmIsActive('rm-depot-ok'))    nItems.push(rmItem('ok','Dépôt : OK'));
+  if(rmIsActive('rm-bureau-ok'))   nItems.push(rmItem('ok','Bureau : OK'));
+  if(rmIsActive('rm-cartons-ok'))  nItems.push(rmItem('ok','Cartons évacués'));
+  if(rmIsActive('rm-cartons-rng')) nItems.push(rmItem('warn','Cartons rangés (non évacués)'));
+  if(rmIsActive('rm-palettes-rng'))nItems.push(rmItem('warn','Palettes rangées (non évacuées)'));
+  if(rmIsActive('rm-bennes-full')) nItems.push(rmItem('err','Bennes pleines — faire demande'));
+  const netNote=document.getElementById('rm-nettoyage-note')?.value;
+  if(netNote) nItems.push(rmItem('arrow',netNote));
+
+  // Besoins
+  const besoins=[];
+  if(rmIsActive('rm-b-savon'))  besoins.push(rmItem('arrow','Savon mains'));
+  if(rmIsActive('rm-b-papier')) besoins.push(rmItem('arrow','Papier WC'));
+  if(rmIsActive('rm-b-scotch')) besoins.push(rmItem('arrow','Scotch gris pour les routes'));
+  if(rmIsActive('rm-b-produit'))besoins.push(rmItem('arrow','Produit WC'));
+  if(rmIsActive('rm-b-gants'))  besoins.push(rmItem('arrow','Gants'));
+  const autresBesoin=document.getElementById('rm-besoins-autres')?.value;
+  if(autresBesoin) besoins.push(rmItem('arrow',autresBesoin));
+
+  // Consignes
+  const colors=['#3b9eff','#22c55e','#a78bfa','#f5a623','#ec4899','#14b8a6','#ef4444'];
+  let consHTML='';
+  for(let i=1;i<=7;i++){
+    const txt=document.getElementById('rm-c'+i)?.value;
+    if(txt) consHTML+=`<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px">
+      <div style="width:22px;height:22px;border-radius:50%;background:${colors[i-1]};color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0">${i}</div>
+      <div style="font-size:11px;color:rgba(255,255,255,.85);line-height:1.4;flex:1">${txt}</div>
+    </div>`;
+  }
+
+  const fluxNote=document.getElementById('rm-flux-note')?.value;
+  const gofoNote=document.getElementById('rm-gofo-note')?.value;
+  const vintedNote=document.getElementById('rm-vinted-note')?.value;
+  const ecartsNote=document.getElementById('rm-ecarts-note')?.value;
+  const remarques=document.getElementById('rm-remarques')?.value;
+  const rappel=document.getElementById('rm-rappel')?.value;
+  const objectif=document.getElementById('rm-objectif')?.value;
+
+  const html=`<div style="width:100%;background:#fff;font-family:'Outfit',sans-serif;border-radius:12px;overflow:hidden;box-shadow:0 4px 30px rgba(0,0,0,.12)">
+    <!-- EN-TÊTE -->
+    <div style="background:#1a2535;color:#fff;padding:20px 24px;text-align:center">
+      <div style="font-size:28px;margin-bottom:4px">📋</div>
+      <div style="font-size:28px;font-weight:900;letter-spacing:-1px">RAPPORT MATIN</div>
+      <div style="display:inline-block;background:rgba(245,166,35,.2);border:1px solid #f5a623;color:#f5a623;padding:4px 14px;border-radius:20px;font-size:13px;font-weight:700;margin-top:8px">${dateStr} — Créneau : Matin</div>
+    </div>
+    <!-- GRILLE -->
+    <div style="display:grid;grid-template-columns:1fr 1fr">
+      <!-- DÉPARTS -->
+      <div style="padding:16px;border:1px solid #e8e4de">
+        <div style="display:flex;align-items:center;gap:7px;font-size:12px;font-weight:800;color:#1a4fa0;text-transform:uppercase;border-bottom:2px solid #1a4fa0;padding-bottom:8px;margin-bottom:12px"><div style="width:24px;height:24px;border-radius:7px;background:#dbeafe;display:flex;align-items:center;justify-content:center">🚛</div>DÉPARTS CHAUFFEURS</div>
+        ${rmItem(tourOk?'ok':'err','Tournées récupérées : '+(tourOk?'OUI':'NON'))}
+        ${rmItem(depOk?'ok':'err','Départs effectués : '+(depOk?'OUI':'NON'))}
+        <div style="margin-top:10px">
+          <div style="display:inline-flex;align-items:center;gap:6px;background:#dbeafe;color:#1d4ed8;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;margin-bottom:6px">🕐 GOFO : ${gofo}</div><br/>
+          <div style="display:inline-flex;align-items:center;gap:6px;background:#fee2e2;color:#dc2626;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700">🕐 VINTED : ${vinted}</div>
+        </div>
+      </div>
+      <!-- NETTOYAGE -->
+      <div style="padding:16px;border:1px solid #e8e4de">
+        <div style="display:flex;align-items:center;gap:7px;font-size:12px;font-weight:800;color:#15803d;text-transform:uppercase;border-bottom:2px solid #22c55e;padding-bottom:8px;margin-bottom:12px"><div style="width:24px;height:24px;border-radius:7px;background:#dcfce7;display:flex;align-items:center;justify-content:center">🧹</div>NETTOYAGE & RANGEMENT</div>
+        ${nItems.join('')||rmItem('ok','RAS')}
+      </div>
+      <!-- FLUX -->
+      <div style="padding:16px;border:1px solid #e8e4de">
+        <div style="display:flex;align-items:center;gap:7px;font-size:12px;font-weight:800;color:#6d28d9;text-transform:uppercase;border-bottom:2px solid #a78bfa;padding-bottom:8px;margin-bottom:12px"><div style="width:24px;height:24px;border-radius:7px;background:#ede9fe;display:flex;align-items:center;justify-content:center">⚙️</div>FLUX & ORGANISATION</div>
+        ${rmItem(rmIsOk('rm-routes-ok')?'ok':'err',rmIsOk('rm-routes-ok')?'Toutes les routes prévues sont sorties.':'⚠ Problème sur les routes')}
+        <div style="margin-top:8px"><strong style="font-size:11px;color:#6d28d9">GOFO :</strong>
+        ${rmItem(rmIsOk('rm-gofo-ok')?'ok':'err',rmIsOk('rm-gofo-ok')?'RAS':(gofoNote||'Problème'))}
+        </div>
+        <div><strong style="font-size:11px;color:#dc2626">VINTED :</strong>
+        ${rmItem(rmIsOk('rm-vinted-ok')?'ok':'err',rmIsOk('rm-vinted-ok')?'RAS':(vintedNote||'Problème'))}
+        </div>
+        ${fluxNote?rmItem('arrow',fluxNote):''}
+      </div>
+      <!-- ÉCARTS -->
+      <div style="padding:16px;border:1px solid #e8e4de">
+        <div style="display:flex;align-items:center;gap:7px;font-size:12px;font-weight:800;color:#dc2626;text-transform:uppercase;border-bottom:2px solid #ef4444;padding-bottom:8px;margin-bottom:12px"><div style="width:24px;height:24px;border-radius:7px;background:#fee2e2;display:flex;align-items:center;justify-content:center">⚠️</div>ÉCARTS / PROBLÈMES</div>
+        <div style="color:#dc2626;font-weight:700;font-size:11px;margin-bottom:8px">Matériel de manutention :</div>
+        ${rmItem(rmIsErr('rm-tp-m-abs')?'err':'ok','Transpalette manuel : '+(rmIsErr('rm-tp-m-abs')?'<strong style="color:#dc2626">ABSENT</strong>':'OK'))}
+        ${rmItem(rmIsActive('rm-tp-e-pb')?'warn':'ok','Transpalette électrique : '+(rmIsActive('rm-tp-e-pb')?'Défectueux':'OK'))}
+        ${ecartsNote?`<div style="margin-top:8px">${rmItem('err',ecartsNote)}</div>`:''}
+      </div>
+      <!-- REMARQUES -->
+      <div style="padding:16px;border:1px solid #e8e4de">
+        <div style="display:flex;align-items:center;gap:7px;font-size:12px;font-weight:800;color:#c2410c;text-transform:uppercase;border-bottom:2px solid #f97316;padding-bottom:8px;margin-bottom:12px"><div style="width:24px;height:24px;border-radius:7px;background:#ffedd5;display:flex;align-items:center;justify-content:center">💬</div>REMARQUES</div>
+        ${remarques?remarques.split('\n').filter(l=>l.trim()).map(l=>rmItem(l.startsWith('!')?'err':l.startsWith('⚠')?'warn':'ok',l.replace(/^[!⚠✅]/,'').trim())).join(''):rmItem('ok','Aucune remarque particulière.')}
+      </div>
+      <!-- BESOINS -->
+      <div style="padding:16px;border:1px solid #e8e4de">
+        <div style="display:flex;align-items:center;gap:7px;font-size:12px;font-weight:800;color:#0369a1;text-transform:uppercase;border-bottom:2px solid #3b9eff;padding-bottom:8px;margin-bottom:12px"><div style="width:24px;height:24px;border-radius:7px;background:#dbeafe;display:flex;align-items:center;justify-content:center">🛒</div>BESOINS</div>
+        ${besoins.join('')||rmItem('ok','Aucun besoin signalé')}
+      </div>
+    </div>
+    <!-- CONSIGNES -->
+    <div style="background:#1a2535;padding:16px 20px">
+      <div style="color:#f5a623;font-weight:800;font-size:13px;text-transform:uppercase;margin-bottom:14px">📋 CONSIGNES AGENT DE QUAI APRÈS-MIDI</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${consHTML}</div>
+    </div>
+    <!-- FOOTER -->
+    <div style="background:#f8f7f5;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;border-top:2px solid #e2ddd6">
+      <div style="background:#dcfce7;border:1px solid #bbf7d0;border-radius:9px;padding:10px 12px;font-size:11px;color:#15803d;max-width:220px;line-height:1.5">
+        <strong style="display:block;margin-bottom:3px;font-size:12px">🛡 RAPPEL</strong>${rappel||''}
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:11px;color:#8a8278;margin-bottom:3px">Rapport rédigé par :</div>
+        <div style="font-size:15px;font-weight:800;font-style:italic">Ait Ouali Omar</div>
+      </div>
+      <div style="background:#fef3c7;border:1px solid #f5a623;border-radius:9px;padding:10px 12px;font-size:11px;color:#92400e;max-width:180px;text-align:center">
+        <div style="font-size:18px;margin-bottom:3px">🎯</div>
+        <strong style="display:block;font-size:12px">OBJECTIF</strong>${objectif||''}
+      </div>
+    </div>
+  </div>`;
+
+  const apercu=document.getElementById('rm-apercu');
+  if(apercu){apercu.style.display='block';apercu.innerHTML=html;apercu.scrollIntoView({behavior:'smooth'});}
+  toast('✅ Rapport généré !');
+};
+
+window.exportRapportPNG=function(){
+  genRapportImage();
+  const apercu=document.getElementById('rm-apercu');
+  if(!apercu||apercu.style.display==='none'){toast('⚠ Génère d\'abord l\'aperçu');return;}
+  // Utiliser html2canvas si disponible
+  if(typeof html2canvas!=='undefined'){
+    html2canvas(apercu.firstChild||apercu,{scale:2,backgroundColor:'#ffffff',useCORS:true}).then(canvas=>{
+      const a=document.createElement('a');
+      const d=new Date();
+      a.download=`Rapport_Matin_${d.getDate().toString().padStart(2,'0')}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getFullYear()}.png`;
+      a.href=canvas.toDataURL('image/png');a.click();
+      toast('✅ PNG téléchargé !');
+    });
+  }else{
+    // Fallback : copier le HTML dans un nouvel onglet pour impression/screenshot
+    const w=window.open('','_blank');
+    w.document.write('<html><head><title>Rapport Matin</title><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet"/></head><body style="margin:0;background:#fff">'+apercu.innerHTML+'</body></html>');
+    w.document.close();
+    toast('📸 Ouvre dans le nouvel onglet → Cmd+P pour imprimer/sauvegarder');
+  }
+};
+
+window.exportRapportWA=function(){
+  const d=new Date();
+  const days=['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+  const dateStr=`${days[d.getDay()]} ${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getFullYear()}`;
+  const gofo=document.getElementById('rm-gofo')?.value||'—';
+  const vinted=document.getElementById('rm-vinted')?.value||'—';
+  const tourOk=rmIsOk('rm-tournees-oui');
+  const depOk=rmIsOk('rm-departs-oui');
+
+  const nItems=[];
+  if(rmIsActive('rm-depot-ok'))    nItems.push('✅ Dépôt : OK');
+  if(rmIsActive('rm-bureau-ok'))   nItems.push('✅ Bureau : OK');
+  if(rmIsActive('rm-cartons-ok'))  nItems.push('✅ Cartons évacués');
+  if(rmIsActive('rm-cartons-rng')) nItems.push('⚠ Cartons rangés (non évacués)');
+  if(rmIsActive('rm-palettes-rng'))nItems.push('⚠ Palettes rangées');
+  if(rmIsActive('rm-bennes-full')) nItems.push('🔴 Bennes pleines — demande à effectuer');
+  const netNote=document.getElementById('rm-nettoyage-note')?.value;
+  if(netNote) nItems.push('→ '+netNote);
+
+  const besoins=[];
+  if(rmIsActive('rm-b-savon'))  besoins.push('Savon mains');
+  if(rmIsActive('rm-b-papier')) besoins.push('Papier WC');
+  if(rmIsActive('rm-b-scotch')) besoins.push('Scotch gris');
+  if(rmIsActive('rm-b-produit'))besoins.push('Produit WC');
+  if(rmIsActive('rm-b-gants'))  besoins.push('Gants');
+  const autresBesoin=document.getElementById('rm-besoins-autres')?.value;
+  if(autresBesoin) besoins.push(autresBesoin);
+
+  const fluxNote=document.getElementById('rm-flux-note')?.value;
+  const gofoNote=document.getElementById('rm-gofo-note')?.value;
+  const vintedNote=document.getElementById('rm-vinted-note')?.value;
+  const ecartsNote=document.getElementById('rm-ecarts-note')?.value;
+  const remarques=document.getElementById('rm-remarques')?.value;
+
+  let txt=`📋 *RAPPORT MATIN — ${dateStr}*
+TLC Services — Agence de Roncq
+${'─'.repeat(36)}
+
+🚛 *DÉPARTS CHAUFFEURS*
+${tourOk?'✅':'❌'} Tournées récupérées : ${tourOk?'OUI':'NON'}
+${depOk?'✅':'❌'} Départs effectués : ${depOk?'OUI':'NON'}
+🕐 GOFO : *${gofo}*
+🕐 VINTED : *${vinted}*
+
+🧹 *NETTOYAGE & RANGEMENT*
+${nItems.join('\n')||'✅ RAS'}
+
+⚙️ *FLUX & ORGANISATION*
+${rmIsOk('rm-routes-ok')?'✅ Toutes les routes sont sorties':'⚠ Problème sur les routes'}
+• GOFO : ${rmIsOk('rm-gofo-ok')?'✅ RAS':(gofoNote||'⚠ Problème')}
+• VINTED : ${rmIsOk('rm-vinted-ok')?'✅ RAS':(vintedNote||'⚠ Problème')}
+${fluxNote?'→ '+fluxNote:''}
+
+🚨 *ÉCARTS / PROBLÈMES*
+• Transpalette manuel : ${rmIsErr('rm-tp-m-abs')?'❌ ABSENT':'✅ OK'}
+• Transpalette élec. : ${rmIsActive('rm-tp-e-pb')?'⚠ Défectueux':'✅ OK'}
+${ecartsNote?'→ '+ecartsNote:''}
+
+💬 *REMARQUES*
+${remarques||'Aucune remarque particulière.'}
+
+🛒 *BESOINS*
+${besoins.length?besoins.map(b=>'• '+b).join('\n'):'Aucun besoin.'}
+${'─'.repeat(36)}
+📋 *CONSIGNES AGENT DE QUAI APRÈS-MIDI*`;
+  for(let i=1;i<=7;i++){
+    const c=document.getElementById('rm-c'+i)?.value;
+    if(c) txt+=`\n${i}. ${c}`;
+  }
+  txt+=`\n${'─'.repeat(36)}\n🛡 _${document.getElementById('rm-rappel')?.value||''}_\n🎯 _${document.getElementById('rm-objectif')?.value||''}_\n\n_Rapport rédigé par Ait Ouali Omar — TLC Services Roncq_`;
+
+  navigator.clipboard.writeText(txt).then(()=>toast('✅ Rapport WhatsApp copié !')).catch(()=>{
+    const t=document.createElement('textarea');t.value=txt;document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);toast('✅ Copié !');
+  });
+};
+// ══════════════════════════════════════════════
+function rBilan(){
+  const month=S.bilanMonth;const year=S.bilanYear;
+  const monthLabel=`${MOIS[month]} ${year}`;
+  const evts=D().events.filter(e=>{const d=new Date(e.dateDebut||e.date||'');return d.getMonth()===month&&d.getFullYear()===year;});
+  const members=D().members.filter(m=>['chauffeur','chauffeurplus'].includes(m.role));
+  const monthOpts=MOIS.map((m,i)=>`<option value="${i}" ${i===month?'selected':''}>${m}</option>`).join('');
+  const yearOpts=[2024,2025,2026].map(y=>`<option value="${y}" ${y===year?'selected':''}>${y}</option>`).join('');
+
+  const totaux={};Object.keys(EVT).forEach(k=>totaux[k]=evts.filter(e=>e.type===k).length);
+  const daysInMonth=new Date(year,month+1,0).getDate();
+  let totalTournees=0,totalDemis=0;
+  members.forEach(m=>{
+    for(let d=1;d<=daysInMonth;d++){
+      const ds=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const t=getTourneeJour(m.id,ds);
+      if(t?.statut==='parti'||t?.statut==='retour') totalTournees++;
+      else if(t?.statut==='demi') totalDemis++;
+    }
+  });
+  const masseSalariale=totalTournees*TARIFS.pleine+totalDemis*TARIFS.demi;
+
+  return`
+  <div class="stitle">📈 Bilan mensuel</div>
+  <div style="display:flex;gap:8px;margin-bottom:14px">
+    <select class="fc" onchange="S.bilanMonth=parseInt(this.value);render()">${monthOpts}</select>
+    <select class="fc" style="width:100px" onchange="S.bilanYear=parseInt(this.value);render()">${yearOpts}</select>
+  </div>
+
+  <div class="bilan-kpi">
+    <div class="bkpi"><div class="bkpi-val" style="color:var(--green)">${totalTournees}</div><div class="bkpi-lbl">Tournées</div></div>
+    <div class="bkpi"><div class="bkpi-val" style="color:var(--amber)">${totaux.retard||0}</div><div class="bkpi-lbl">Retards</div></div>
+    <div class="bkpi"><div class="bkpi-val" style="color:var(--red)">${totaux.absence||0}</div><div class="bkpi-lbl">Absences</div></div>
+    <div class="bkpi"><div class="bkpi-val" style="color:var(--purple)">${totaux.maladie||0}</div><div class="bkpi-lbl">Arrêts</div></div>
+  </div>
+
+  <div class="paie-card" style="margin-bottom:12px">
+    <div style="font-size:12px;opacity:.5">Masse salariale — ${monthLabel}</div>
+    <div class="paie-total">${fmtEuro(masseSalariale)}</div>
+    <div style="font-size:12px;opacity:.6">${totalTournees} tournées + ${totalDemis} demis</div>
+  </div>
+
+  <div style="background:var(--card);border-radius:var(--r);border:1px solid var(--border);padding:16px;margin-bottom:12px">
+    <div style="font-weight:800;font-size:14px;margin-bottom:12px">📊 Événements RH</div>
+    <canvas id="bilanChart" height="160"></canvas>
+  </div>
+
+  <!-- Tableau -->
+  <div class="card" style="overflow:auto;margin-bottom:12px">
+    <div style="font-weight:800;font-size:14px;padding:14px 14px 10px">Récap par chauffeur — ${monthLabel}</div>
+    <div style="overflow-x:auto;padding:0 6px 14px">
+    <table style="width:100%;border-collapse:collapse;font-size:11px">
+      <thead><tr style="background:var(--night);color:#fff">
+        <th style="padding:8px;text-align:left;border-radius:8px 0 0 0">Agent</th>
+        <th style="padding:8px;text-align:center">🚛</th><th style="padding:8px;text-align:center">⏰</th>
+        <th style="padding:8px;text-align:center">✗</th><th style="padding:8px;text-align:center">🏥</th>
+        <th style="padding:8px;text-align:center;border-radius:0 8px 0 0">💰</th>
+      </tr></thead>
+      <tbody>
+        ${members.map((m,i)=>{
+          let pleines=0,demis=0;
+          for(let d=1;d<=daysInMonth;d++){
+            const ds=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+            const t=getTourneeJour(m.id,ds);
+            if(t?.statut==='parti'||t?.statut==='retour') pleines++;
+            else if(t?.statut==='demi') demis++;
+          }
+          const mEvts=evts.filter(e=>String(e.memberId)===String(m.id));
+          const total=pleines*TARIFS.pleine+demis*TARIFS.demi;
+          return`<tr style="background:${i%2?'var(--bg)':'var(--card)'}">
+            <td style="padding:8px;font-weight:700">${m.nom.split(' ')[0]}</td>
+            <td style="padding:8px;text-align:center;font-weight:700;color:var(--green)">${pleines+demis}</td>
+            <td style="padding:8px;text-align:center;color:${mEvts.filter(e=>e.type==='retard').length?'var(--amber)':'var(--muted)'}">${mEvts.filter(e=>e.type==='retard').length||'—'}</td>
+            <td style="padding:8px;text-align:center;color:${mEvts.filter(e=>e.type==='absence').length?'var(--red)':'var(--muted)'}">${mEvts.filter(e=>e.type==='absence').length||'—'}</td>
+            <td style="padding:8px;text-align:center;color:${mEvts.filter(e=>e.type==='maladie').length?'var(--purple)':'var(--muted)'}">${mEvts.filter(e=>e.type==='maladie').length||'—'}</td>
+            <td style="padding:8px;text-align:center;font-weight:700;color:var(--green)">${fmtEuro(total)}</td>
+          </tr>`;}).join('')}
+      </tbody>
+    </table>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-night" onclick="exportBilanTexte()" style="flex:1">💬 Copier</button>
+    <button class="btn btn-blue" onclick="exportBilanPDF()" style="flex:1">📄 PDF</button>
+    <button class="btn btn-green" onclick="envoyerRapportMickael()" style="flex:1">📧 Email Mickael</button>
+  </div>`;
+}
+
+function drawBilanChart(){
+  const canvas=document.getElementById('bilanChart');if(!canvas)return;
+  const ctx=canvas.getContext('2d');
+  canvas.width=canvas.parentElement.offsetWidth-32;
+  const month=S.bilanMonth;const year=S.bilanYear;
+  const evts=D().events.filter(e=>{const d=new Date(e.dateDebut||e.date||'');return d.getMonth()===month&&d.getFullYear()===year;});
+  const keys=['retard','absence','maladie','conge','repos','accident'];
+  const vals=keys.map(k=>evts.filter(e=>e.type===k).length);
+  const colors=keys.map(k=>EVT[k].color);
+  const labels=keys.map(k=>EVT[k].ico+' '+EVT[k].label.slice(0,7));
+  const max=Math.max(...vals,1);
+  const W=canvas.width;const H=canvas.height=160;
+  const pad=36;const barW=(W-pad*2)/keys.length*0.55;const gap=(W-pad*2)/keys.length;
+  ctx.clearRect(0,0,W,H);
+  for(let i=0;i<=4;i++){
+    const y=16+(H-36)*i/4;ctx.strokeStyle='#e2ddd6';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(pad,y);ctx.lineTo(W-8,y);ctx.stroke();
+    ctx.fillStyle='#8a8278';ctx.font='9px Outfit';ctx.textAlign='right';
+    ctx.fillText(Math.round(max*(4-i)/4),pad-3,y+3);
+  }
+  vals.forEach((v,i)=>{
+    const x=pad+i*gap+(gap-barW)/2;const bH=v?(H-36)*v/max:0;const y=H-20-bH;
+    ctx.fillStyle=colors[i]+'22';ctx.beginPath();if(ctx.roundRect)ctx.roundRect(x,16,barW,H-36,3);else ctx.rect(x,16,barW,H-36);ctx.fill();
+    ctx.fillStyle=colors[i];ctx.beginPath();if(ctx.roundRect)ctx.roundRect(x,y,barW,bH,3);else ctx.rect(x,y,barW,bH);ctx.fill();
+    if(v>0){ctx.fillStyle=colors[i];ctx.font='bold 11px Outfit';ctx.textAlign='center';ctx.fillText(v,x+barW/2,y-3);}
+    ctx.fillStyle='#8a8278';ctx.font='8px Outfit';ctx.textAlign='center';ctx.fillText(labels[i],x+barW/2,H-4);
+  });
+}
+
+window.exportBilanTexte=function(){
+  const month=S.bilanMonth;const year=S.bilanYear;
+  const monthLabel=`${MOIS[month]} ${year}`;
+  const members=D().members.filter(m=>['chauffeur','chauffeurplus'].includes(m.role));
+  const evts=D().events.filter(e=>{const d=new Date(e.dateDebut||e.date||'');return d.getMonth()===month&&d.getFullYear()===year;});
+  const daysInMonth=new Date(year,month+1,0).getDate();
+  let txt=`📊 BILAN ${monthLabel.toUpperCase()}\nTLC Services — Agence de Roncq\n${'═'.repeat(40)}\n\n`;
+  let totalT=0,totalD=0;
+  members.forEach(m=>{
+    let p=0,d=0;
+    for(let day=1;day<=daysInMonth;day++){
+      const ds=`${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+      const t=getTourneeJour(m.id,ds);
+      if(t?.statut==='parti'||t?.statut==='retour')p++;else if(t?.statut==='demi')d++;
+    }
+    totalT+=p;totalD+=d;
+    const mEvts=evts.filter(e=>String(e.memberId)===String(m.id));
+    const tot=p*TARIFS.pleine+d*TARIFS.demi;
+    txt+=`▸ ${m.nom}\n  🚛 ${p}T + ½${d} = ${fmtEuro(tot)}\n`;
+    if(mEvts.length) txt+=`  ${mEvts.map(e=>`${EVT[e.type]?.ico} ${EVT[e.type]?.label}`).join(', ')}\n`;
+  });
+  txt+=`\n${'─'.repeat(40)}\n💰 Masse salariale : ${fmtEuro(totalT*75+totalD*40)}\n🚛 Total tournées : ${totalT} + ${totalD} demis\n${'═'.repeat(40)}\nTransiTrack`;
+  navigator.clipboard.writeText(txt).then(()=>toast('✅ Bilan copié !')).catch(()=>{const t=document.createElement('textarea');t.value=txt;document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);toast('✅ Copié !');});
+};
+
+window.exportBilanPDF=function(){
+  const{jsPDF}=window.jspdf;if(!jsPDF){toast('PDF non disponible');return;}
+  const month=S.bilanMonth;const year=S.bilanYear;const monthLabel=`${MOIS[month]} ${year}`;
+  const members=D().members.filter(m=>['chauffeur','chauffeurplus'].includes(m.role));
+  const daysInMonth=new Date(year,month+1,0).getDate();
+  const doc=new jsPDF();let y=40;
+  doc.setFillColor(15,25,35);doc.rect(0,0,210,30,'F');
+  doc.setTextColor(255,255,255);doc.setFontSize(14);doc.setFont('helvetica','bold');
+  doc.text(`Bilan Mensuel — ${monthLabel}`,14,12);
+  doc.setFontSize(10);doc.text('TLC Services — Agence de Roncq',14,22);
+  doc.setTextColor(15,25,35);
+  let totalT=0,totalD=0,totalMasse=0;
+  members.forEach((m,i)=>{
+    let p=0,d=0;
+    for(let day=1;day<=daysInMonth;day++){
+      const ds=`${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+      const t=getTourneeJour(m.id,ds);
+      if(t?.statut==='parti'||t?.statut==='retour')p++;else if(t?.statut==='demi')d++;
+    }
+    totalT+=p;totalD+=d;const tot=p*75+d*40;totalMasse+=tot;
+    if(i%2===0){doc.setFillColor(248,247,245);doc.rect(14,y-4,182,8,'F');}
+    doc.setFontSize(9);doc.setFont('helvetica','bold');doc.text(m.nom,16,y);
+    doc.setFont('helvetica','normal');doc.text(`${p}T+${d}D`,110,y);doc.text(fmtEuro(tot),180,y,'right');y+=9;
+    if(y>270){doc.addPage();y=20;}
+  });
+  y+=4;doc.setDrawColor(200,200,200);doc.line(14,y,196,y);y+=8;
+  doc.setFont('helvetica','bold');doc.text('TOTAL',14,y);doc.text(`${totalT}T+${totalD}D`,110,y);doc.text(fmtEuro(totalMasse),180,y,'right');
+  doc.setFontSize(8);doc.setTextColor(150,150,150);doc.setFont('helvetica','normal');
+  doc.text(`Généré le ${new Date().toLocaleDateString('fr-FR')} — TransiTrack`,14,285);
+  doc.save(`Bilan_${monthLabel}.pdf`);toast('✅ PDF généré !');
+};
+
+window.envoyerRapportMickael=async function(){
+  const month=S.bilanMonth;const year=S.bilanYear;const monthLabel=`${MOIS[month]} ${year}`;
+  const members=D().members.filter(m=>['chauffeur','chauffeurplus'].includes(m.role));
+  const evts=D().events.filter(e=>{const d=new Date(e.dateDebut||e.date||'');return d.getMonth()===month&&d.getFullYear()===year;});
+  const daysInMonth=new Date(year,month+1,0).getDate();
+  let lignes='';let totalT=0,totalD=0,totalMasse=0;
+  members.forEach(m=>{
+    let p=0,d=0;
+    for(let day=1;day<=daysInMonth;day++){
+      const ds=`${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+      const t=getTourneeJour(m.id,ds);
+      if(t?.statut==='parti'||t?.statut==='retour')p++;else if(t?.statut==='demi')d++;
+    }
+    totalT+=p;totalD+=d;const tot=p*75+d*40;totalMasse+=tot;
+    lignes+=`${m.nom}: ${p} tournées + ${d} demis = ${fmtEuro(tot)}\n`;
+  });
+  toast('📧 Envoi du rapport…');
+  try{
+    const res=await postAPI('notifyEvent',{
+      type:'rapport_mensuel',memberNom:'Rapport Mensuel '+monthLabel,memberRole:'Dispatcher',
+      matricule:'—',dateDebut:monthLabel,dateFin:monthLabel,
+      motif:`Bilan ${monthLabel}\n\n${lignes}\nMasse salariale : ${fmtEuro(totalMasse)}\nTotal tournées : ${totalT} + ${totalD} demis\nÉvénements RH : ${evts.length}`,
+      statut:'Information',note:'',certifUrl:'',
+      services:['Mickael Talaha'],
+    });
+    if(res.ok) toast('✅ Rapport envoyé à Mickael !');
+    else toast('⚠ Erreur: '+(res.error||'inconnue'));
+  }catch(e){toast('⚠ Envoi échoué');}
+};
+
+// ══════════════════════════════════════════════
+// PASSATION
+// ══════════════════════════════════════════════
+function rPassation(){
+  const passes=[...D().passations].reverse();
+  return`
+  <div class="stitle">🔁 Fiches Passation</div>
+  <div class="ssub">Transmission à Matis (13h–20h)</div>
+  ${!passes.length?`<div class="card cp"><div class="empty"><div style="font-size:36px">🔁</div><div style="font-weight:700;margin-top:8px">Aucune fiche</div></div></div>`:
+  passes.map(p=>`<div class="pass-card">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+      <div><div style="font-weight:800;font-size:15px">🔁 ${fmtDate(p.date)}</div><div style="font-size:11px;opacity:.4">Dispatcher → Matis</div></div>
+      <div style="display:flex;gap:6px">
+        <button onclick="copyPassation('${p.id}')" style="background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:7px;padding:5px 9px;font-size:11px;cursor:pointer;font-family:'Outfit',sans-serif;font-weight:600">📤</button>
+        ${currentRole==='dispatcher'?`<button onclick="delPass('${p.id}')" style="background:rgba(239,68,68,.3);border:none;color:#fff;border-radius:7px;padding:5px 9px;font-size:11px;cursor:pointer">🗑</button>`:''}
+      </div>
+    </div>
+    <div class="pass-line"><div class="pass-ico">✅</div><div class="pass-text"><strong>Départs :</strong> ${p.departs||'RAS'}</div></div>
+    ${p.incident?`<div class="pass-line"><div class="pass-ico">⚠</div><div class="pass-text"><strong>Incident :</strong> ${p.incident}</div></div>`:''}
+    ${p.surveiller?`<div class="pass-line"><div class="pass-ico">👁</div><div class="pass-text"><strong>À surveiller :</strong> ${p.surveiller}</div></div>`:''}
+    ${p.consigne?`<div class="pass-line"><div class="pass-ico">📞</div><div class="pass-text"><strong>Consignes :</strong> ${p.consigne}</div></div>`:''}
+    ${p.sacsRelivraison?`<div class="pass-line"><div class="pass-ico">📦</div><div class="pass-text"><strong>Sacs relivraison J+1 :</strong> ${p.sacsRelivraison}</div></div>`:''}
+  </div>`).join('')}`;
+}
+
+window.copyPassation=function(id){
+  const p=D().passations.find(x=>String(x.id)===String(id));if(!p)return;
+  const txt=`🔁 PASSATION ${fmtDate(p.date)}\n${'─'.repeat(36)}\n✅ Départs: ${p.departs||'RAS'}\n⚠ Incidents: ${p.incident||'Aucun'}\n👁 À surveiller: ${p.surveiller||'—'}\n📦 Relivraison J+1: ${p.sacsRelivraison||'—'}\n📞 Consignes: ${p.consigne||'—'}\n${'─'.repeat(36)}\nTransiTrack TLC Roncq`;
+  navigator.clipboard.writeText(txt).then(()=>toast('✅ Passation copiée !')).catch(()=>{const t=document.createElement('textarea');t.value=txt;document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);toast('✅ Copiée !');});
+};
+
+// ══════════════════════════════════════════════
+// MORE
+// ══════════════════════════════════════════════
+function rMore(){
+  return`
+  <div class="stitle">⚙️ Plus</div>
+  <div class="ssub">Outils & paramètres</div>
+  <div class="sgrid2">
+    <button class="btn btn-purple" onclick="go('bilan')" style="height:54px">📈 Bilan mensuel</button>
+    <button class="btn btn-blue" onclick="go('whatsapp')" style="height:54px">💬 WhatsApp</button>
+    <button class="btn btn-night" onclick="go('passation')" style="height:54px">🔁 Passation</button>
+    <button class="btn btn-green" onclick="syncAll(true)" style="height:54px">🔄 Synchroniser</button>
+  </div>
+  <div class="card cp" style="margin-bottom:12px">
+    <div style="font-weight:800;font-size:14px;margin-bottom:12px">🔐 Changer les PINs</div>
+    <div class="fg"><label class="fl">PIN Dispatcher</label><input class="fc" id="pin-disp" type="password" placeholder="4 chiffres" maxlength="4" inputmode="numeric"/></div>
+    <div class="fg"><label class="fl">PIN Agent Quai</label><input class="fc" id="pin-quai" type="password" placeholder="4 chiffres" maxlength="4" inputmode="numeric"/></div>
+    <button class="btn btn-night" onclick="changePins()">✓ Enregistrer</button>
+  </div>
+  <div class="dzone"><button class="btn btn-red btn-sm" onclick="lockApp()">🔒 Se déconnecter</button></div>`;
+}
+window.changePins=function(){const d=document.getElementById('pin-disp').value.trim();const q=document.getElementById('pin-quai').value.trim();if((d&&d.length!==4)||(q&&q.length!==4)){alert('4 chiffres requis.');return;}const pins=getPins();if(d)pins.dispatcher=d;if(q)pins.quai=q;savePins(pins);toast('✅ PINs mis à jour !');render();};
+window.lockApp=function(){if(!confirm('Se déconnecter ?'))return;['lockScreen'].forEach(id=>{document.getElementById(id).style.display='flex';});['mainHdr','app','mainNav'].forEach(id=>{document.getElementById(id).style.display='none';});pinBuffer='';updateDots();selectRole('dispatcher');};
+
+// ══════════════════════════════════════════════
+// MODALS
+// ══════════════════════════════════════════════
+function openModal(type,data={}){S.modal=type;S.mdata=data;renderModal();}
+function closeModal(){S.modal=null;S.mdata={};S.editId=null;renderModal();}
+function openAddEvtFor(id){S.selId=id;openModal('add_event',{memberId:id});}
+function editMember(id){S.editId=id;openModal('add_member');}
+function renderModal(){
+  document.querySelectorAll('.moverlay').forEach(m=>m.remove());
+  if(!S.modal)return;
+  const ov=document.createElement('div');ov.className='moverlay';ov.innerHTML=getModal();
+  ov.onclick=(e)=>{if(e.target===ov)closeModal();};document.body.appendChild(ov);
+  setupModalEvents();
+}
+function getModal(){
+  if(S.modal==='add_member')       return mAddMember();
+  if(S.modal==='add_event')        return mAddEvent();
+  if(S.modal==='add_passation')    return mAddPassation();
+  if(S.modal==='check_chauffeur')  return mCheckChauffeur();
+  if(S.modal==='incident')         return mIncident();
+  if(S.modal==='sac_oublie')       return mSacOublie();
+  if(S.modal==='protocole_absence')return mProtocoleAbsence();
+  return'';
+}
+function setupModalEvents(){
+  const t=document.getElementById('ev-type');
+  if(t) pickEvtType(t.value);
+}
+
+// MODAL MEMBRE
+function mAddMember(){
+  const editing=S.editId;const m=editing?getMember(editing):null;
+  return`<div class="msheet"><div class="mhandle"></div>
+  <div class="mtitle">${editing?'✏️ Modifier':'👤 Nouveau membre'}</div>
+  <div class="fg"><label class="fl">Nom complet *</label><input class="fc" id="m-nom" placeholder="Prénom NOM" value="${m?m.nom:''}"/></div>
+  <div class="fg"><label class="fl">Rôle *</label><select class="fc" id="m-role">
+    ${Object.entries(ROLES).map(([k,r])=>`<option value="${k}" ${m&&m.role===k?'selected':''}>${r.ico} ${r.label}</option>`).join('')}
+  </select></div>
+  <div class="fg"><label class="fl">Contrat</label><select class="fc" id="m-contrat">
+    ${Object.entries(CONTRATS).map(([k,v])=>`<option value="${k}" ${m&&m.contrat===k?'selected':''}>${v}</option>`).join('')}
+  </select></div>
+  <div class="fg"><label class="fl">Groupe de départ</label><select class="fc" id="m-groupe">
+    ${Object.entries(GROUPES).map(([k,v])=>`<option value="${k}" ${m&&m.groupe===k?'selected':''}>${v}</option>`).join('')}
+  </select></div>
+  <div class="frow">
+    <div class="fg"><label class="fl">Matricule</label><input class="fc" id="m-mat" placeholder="CH-001" value="${m?m.matricule||'':''}"/></div>
+    <div class="fg"><label class="fl">Horaires</label><input class="fc" id="m-hor" placeholder="8h30–16h" value="${m?m.horaires||'':''}"/></div>
+  </div>
+  <div class="fg"><label class="fl">Téléphone</label><input class="fc" id="m-tel" type="tel" placeholder="06 XX XX XX XX" value="${m?m.telephone||'':''}"/></div>
+  <button class="btn btn-night" onclick="saveMember('${editing||''}')">${editing?'✓ Enregistrer':'+ Ajouter'}</button>
+  </div>`;
+}
+async function saveMember(editId){
+  const nom=document.getElementById('m-nom').value.trim();if(!nom){alert('Nom obligatoire.');return;}
+  const obj={nom,role:document.getElementById('m-role').value,contrat:document.getElementById('m-contrat').value,groupe:document.getElementById('m-groupe').value,matricule:document.getElementById('m-mat').value.trim(),horaires:document.getElementById('m-hor').value.trim(),telephone:document.getElementById('m-tel').value.trim()};
+  const{members}=D();
+  if(editId){const i=members.findIndex(m=>String(m.id)===editId);members[i]={...members[i],...obj};}
+  else{members.push({id:Date.now(),...obj});}
+  closeModal();render();toast('💾 Sauvegarde…');await push('saveMembers',D().members);toast('✅ Membre sauvegardé');
+}
+
+// MODAL CHECK CHAUFFEUR (statut matin)
+function mCheckChauffeur(){
+  const{memberId,date}=S.mdata;const m=getMember(memberId);
+  const t=getTourneeJour(memberId,date)||{statut:'attente'};
+  return`<div class="msheet"><div class="mhandle"></div>
+  <div class="mtitle">🌅 ${m?m.nom:'Chauffeur'}</div>
+  <div class="fg"><label class="fl">Statut</label>
+    <div class="chips">
+      ${Object.entries(STATUTS_TOURNEE).map(([k,v])=>`<button class="chip ${t.statut===k?'on':''}" onclick="setStatutModal('${k}')">${v.ico} ${v.label}</button>`).join('')}
+    </div>
+    <input type="hidden" id="ch-statut" value="${t.statut}"/>
+  </div>
+  <div class="fg"><label class="fl">📦 Sacs vérifiés ?</label>
+    <div style="display:flex;gap:8px">
+      <button class="chip ${t.sacsOk?'on':''}" id="sacs-ok" onclick="document.getElementById('sacs-ok').classList.toggle('on');document.getElementById('sacs-val').value=document.getElementById('sacs-ok').classList.contains('on')?'1':'0'">✅ Sacs OK</button>
+      <input type="hidden" id="sacs-val" value="${t.sacsOk?'1':'0'}"/>
+    </div>
+  </div>
+  <div class="fg"><label class="fl">Note (optionnel)</label><input class="fc" id="ch-note" placeholder="Retard, problème EPI…" value="${t.note||''}"/></div>
+  <button class="btn btn-night" onclick="saveCheckChauffeur('${memberId}','${date}')">✓ Enregistrer</button>
+  </div>`;
+}
+window.setStatutModal=function(k){
+  document.getElementById('ch-statut').value=k;
+  document.querySelectorAll('.msheet .chip').forEach(c=>{if(['attente','parti','retour','abandon','absence','demi'].some(s=>c.textContent.includes(STATUTS_TOURNEE[s]?.ico)))c.classList.remove('on');});
+  event.target.classList.add('on');
+};
+window.saveCheckChauffeur=async function(memberId,date){
+  const statut=document.getElementById('ch-statut').value;
+  const sacsOk=document.getElementById('sacs-val').value==='1';
+  const note=document.getElementById('ch-note').value.trim();
+  const existing=getTourneeJour(memberId,date)||{memberId,date};
+  Object.assign(existing,{statut,sacsOk,note,heureStatut:new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})});
+  saveTourneeJour(existing);closeModal();render();toast('✅ Statut mis à jour');
+};
+
+// MODAL INCIDENT
+function mIncident(){
+  const{memberId,date}=S.mdata;const m=getMember(memberId);
+  return`<div class="msheet"><div class="mhandle"></div>
+  <div class="mtitle">⚠ Incident — ${m?m.nom:''}</div>
+  <div class="fg"><label class="fl">Type d'incident</label>
+    <div class="chips" id="inc-type-g">
+      ${['🔴 Abandon tournée','📦 Sac oublié','🚗 Panne véhicule','😤 Problème client','🏭 Relais fermé','Autre'].map((t,i)=>
+        `<button class="chip ${i===0?'on':''}" onclick="this.parentElement.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));this.classList.add('on');document.getElementById('inc-type').value=this.textContent">${t}</button>`).join('')}
+    </div>
+    <input type="hidden" id="inc-type" value="🔴 Abandon tournée"/>
+  </div>
+  <div class="fg"><label class="fl">Description *</label><textarea class="fc" id="inc-desc" placeholder="Décrivez l'incident…"></textarea></div>
+  <div class="fg"><label class="fl">Heure</label><input class="fc" id="inc-heure" type="time" value="${new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}"/></div>
+  <button class="btn btn-red" onclick="saveIncident('${memberId}','${date}')">🚨 Enregistrer l'incident</button>
+  </div>`;
+}
+window.saveIncident=async function(memberId,date){
+  const type=document.getElementById('inc-type').value;
+  const desc=document.getElementById('inc-desc').value.trim();
+  const heure=document.getElementById('inc-heure').value;
+  if(!desc){alert('Description obligatoire.');return;}
+  const existing=getTourneeJour(memberId,date)||{memberId,date,statut:'attente'};
+  existing.incident=`[${heure}] ${type} — ${desc}`;
+  if(type.includes('Abandon')) existing.statut='abandon';
+  saveTourneeJour(existing);closeModal();render();toast('⚠ Incident enregistré');
+};
+
+// MODAL SAC OUBLIÉ
+function mSacOublie(){
+  const{memberId,date}=S.mdata;const m=getMember(memberId);
+  return`<div class="msheet"><div class="mhandle"></div>
+  <div class="mtitle">📦 Sac oublié — ${m?m.nom:''}</div>
+  <div class="fg"><label class="fl">Description du/des sac(s) *</label><textarea class="fc" id="sac-desc" placeholder="Ex: 2 sacs rouge, point relais Tabac Roncq…"></textarea></div>
+  <div class="fg"><label class="fl">Action à prendre</label>
+    <div class="chips">
+      <button class="chip on" id="sac-recup" onclick="document.getElementById('sac-action').value='recuperation';this.classList.add('on');document.getElementById('sac-j1').classList.remove('on')">🏃 Récupération immédiate</button>
+      <button class="chip" id="sac-j1" onclick="document.getElementById('sac-action').value='relivraison';this.classList.add('on');document.getElementById('sac-recup').classList.remove('on')">📅 Relivraison J+1</button>
+    </div>
+    <input type="hidden" id="sac-action" value="recuperation"/>
+  </div>
+  <button class="btn btn-amber" onclick="saveSacOublie('${memberId}','${date}')">📦 Enregistrer</button>
+  </div>`;
+}
+window.saveSacOublie=async function(memberId,date){
+  const desc=document.getElementById('sac-desc').value.trim();
+  const action=document.getElementById('sac-action').value;
+  if(!desc){alert('Description obligatoire.');return;}
+  const existing=getTourneeJour(memberId,date)||{memberId,date,statut:'parti'};
+  existing.sacsOublies=desc;existing.sacAction=action;
+  saveTourneeJour(existing);closeModal();render();
+  toast(action==='relivraison'?'📅 Relivraison J+1 notée':'🏃 Récupération immédiate notée');
+};
+
+// MODAL PROTOCOLE ABSENCE
+function mProtocoleAbsence(){
+  const members=D().members.filter(m=>['chauffeur','chauffeurplus'].includes(m.role));
+  const today=todayISO();
+  const dispos=members.filter(m=>{const t=getTourneeJour(m.id,today);return!t||t.statut==='attente';});
+  return`<div class="msheet"><div class="mhandle"></div>
+  <div class="mtitle">📋 Protocole remplacement</div>
+  <div style="background:#fef3c7;border-radius:11px;padding:12px;margin-bottom:14px;font-size:13px;color:#92400e;line-height:1.6">
+    <strong>🔄 Étapes à suivre :</strong><br/>
+    1. Appeler un chauffeur disponible ci-dessous<br/>
+    2. Redistribuer les sacs de la tournée<br/>
+    3. Si impossible → escalader à Mickael Talaha<br/>
+    4. Enregistrer l'absence dans le suivi RH
+  </div>
+  <div style="font-weight:700;font-size:13px;margin-bottom:10px">Chauffeurs disponibles aujourd'hui (${dispos.length})</div>
+  ${dispos.map(m=>`<div style="background:var(--card);border-radius:11px;border:1px solid var(--border);padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:10px">
+    <div style="width:36px;height:36px;border-radius:9px;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff">${initials(m.nom)}</div>
+    <div style="flex:1"><div style="font-weight:700;font-size:13px">${m.nom}</div><div style="font-size:11px;color:var(--muted)">${GROUPES[m.groupe]||'—'}</div></div>
+    ${m.telephone?`<a href="tel:${m.telephone}" style="background:var(--green);color:#fff;padding:6px 12px;border-radius:8px;font-size:12px;font-weight:700;text-decoration:none">📞 Appeler</a>`:''}
+  </div>`).join('')}
+  <div style="background:#fee2e2;border-radius:11px;padding:12px;margin-top:8px">
+    <div style="font-weight:700;color:#dc2626;margin-bottom:6px">🆘 Si aucun disponible</div>
+    <a href="tel:${D().members.find(m=>m.nom.toLowerCase().includes('mickael')||m.matricule==='supervisor')?.telephone||''}" style="display:block;background:#dc2626;color:#fff;padding:10px;border-radius:9px;text-align:center;font-weight:700;text-decoration:none;font-size:13px">📞 Appeler Mickael Talaha</a>
+  </div>
+  </div>`;
+}
+
+// MODAL EVENT
+function mAddEvent(){
+  const members=D().members;const pre=S.mdata.memberId||S.selId||(members[0]?members[0].id:'');const today=todayISO();
+  return`<div class="msheet"><div class="mhandle"></div>
+  <div class="mtitle">📋 Événement RH</div>
+  <div class="fg"><label class="fl">Membre *</label><select class="fc" id="ev-m">
+    ${members.map(m=>`<option value="${m.id}" ${String(m.id)===String(pre)?'selected':''}>${ROLES[m.role]?.ico||''} ${m.nom}</option>`).join('')}
+  </select></div>
+  <div class="fg"><label class="fl">Type *</label>
+    <div class="chips" id="ev-type-g">
+      ${Object.entries(EVT).map(([k,t],i)=>`<button class="chip ${i===0?'on':''}" data-t="${k}" onclick="pickEvtType('${k}')">${t.ico} ${t.label}</button>`).join('')}
+    </div><input type="hidden" id="ev-type" value="retard"/>
+  </div>
+  <div id="ev-periode-block" style="display:none">
+    <div class="frow">
+      <div class="fg"><label class="fl">📅 Date début *</label><input class="fc" id="ev-debut" type="date" value="${today}" oninput="updateDureeCalc()"/></div>
+      <div class="fg"><label class="fl">📅 Date fin *</label><input class="fc" id="ev-fin" type="date" value="${today}" oninput="updateDureeCalc()"/></div>
+    </div>
+    <div id="ev-duree-calc" style="background:#f0fdf4;border-radius:9px;padding:9px;font-size:12px;font-weight:600;color:#15803d;margin-bottom:14px;display:none">⏱ Durée : <span id="ev-duree-txt">—</span></div>
+  </div>
+  <div id="ev-date-block">
+    <div class="frow">
+      <div class="fg"><label class="fl">Date *</label><input class="fc" id="ev-date" type="date" value="${today}"/></div>
+      <div class="fg"><label class="fl">Durée</label><input class="fc" id="ev-dur" placeholder="30 min…"/></div>
+    </div>
+  </div>
+  <div class="fg"><label class="fl">Statut</label><select class="fc" id="ev-stat">${STATUTS_EVT.map(s=>`<option>${s}</option>`).join('')}</select></div>
+  <div class="fg"><label class="fl">Motif</label><textarea class="fc" id="ev-mot" placeholder="Motif…"></textarea></div>
+  <div id="ev-certif-block" style="display:none">
+    <div class="fg"><label class="fl">📎 Certificat médical</label>
+      <div style="border:2px dashed var(--border);border-radius:12px;padding:18px;text-align:center;cursor:pointer;background:var(--bg)" id="certZone" onclick="document.getElementById('certInput').click()">
+        <div style="font-size:28px;margin-bottom:6px">📎</div>
+        <div style="font-weight:700;font-size:13px">Cliquer pour joindre</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:3px">PDF ou photo</div>
+      </div>
+      <input type="file" id="certInput" accept=".pdf,image/*" style="display:none" onchange="onCertSelected(this)"/>
+    </div>
+  </div>
+  <div class="fg"><label class="fl">Services à notifier</label>
+    <div class="chips" id="ev-svc-g">${SERVICES.map(s=>`<button class="chip" data-svc="${s}" onclick="this.classList.toggle('on')">${s}</button>`).join('')}</div>
+  </div>
+  <button class="btn btn-night" onclick="saveEvt()">✓ Enregistrer</button>
+  </div>`;
+}
+
+function pickEvtType(t){
+  document.getElementById('ev-type').value=t;
+  document.querySelectorAll('#ev-type-g .chip').forEach(c=>c.classList.toggle('on',c.dataset.t===t));
+  const hp=EVT[t]?.hasPeriode;const hc=EVT[t]?.hasCertif;
+  document.getElementById('ev-periode-block').style.display=hp?'block':'none';
+  document.getElementById('ev-date-block').style.display=hp?'none':'block';
+  document.getElementById('ev-certif-block').style.display=hc?'block':'none';
+  updateDureeCalc();
+}
+window.updateDureeCalc=function(){
+  const d=document.getElementById('ev-debut');const f=document.getElementById('ev-fin');
+  const calc=document.getElementById('ev-duree-calc');const txt=document.getElementById('ev-duree-txt');
+  if(!d||!f)return;if(d.value&&f.value){const j=diffDays(d.value,f.value);if(j>0){calc.style.display='block';txt.textContent=`${j} jour${j>1?'s':''}`;return;}}calc.style.display='none';
+};
+
+let pendingCertif=null;
+window.onCertSelected=function(input){
+  const file=input.files[0];if(!file)return;pendingCertif=file;
+  const zone=document.getElementById('certZone');
+  zone.style.borderColor='#22c55e';zone.style.background='#f0fdf4';
+  zone.innerHTML=`<div style="font-size:26px;margin-bottom:5px">${file.type.includes('image')?'🖼':'📄'}</div><div style="font-weight:700;font-size:12px;color:#15803d">${file.name}</div><div style="font-size:11px;color:#16a34a;margin-top:3px">${(file.size/1024/1024).toFixed(2)} MB</div>`;
+};
+
+async function saveEvt(){
+  const memberId=document.getElementById('ev-m').value;const type=document.getElementById('ev-type').value;
+  const statut=document.getElementById('ev-stat').value;const motif=document.getElementById('ev-mot').value.trim();
+  const services=[...document.querySelectorAll('#ev-svc-g .chip.on')].map(c=>c.dataset.svc);
+  const hasPeriode=EVT[type]?.hasPeriode;
+  let evtData={id:Date.now(),memberId,type,statut,motif,services};
+  if(hasPeriode){
+    const debut=document.getElementById('ev-debut').value;const fin=document.getElementById('ev-fin').value;
+    if(!debut||!fin){alert('Dates obligatoires.');return;}if(fin<debut){alert('Date fin < date début.');return;}
+    evtData.dateDebut=debut;evtData.dateFin=fin;evtData.duree=diffDays(debut,fin)+' j';
+  }else{
+    const date=document.getElementById('ev-date').value;if(!date){alert('Date obligatoire.');return;}
+    evtData.date=date;evtData.duree=document.getElementById('ev-dur').value.trim();
+  }
+  D().events.push(evtData);closeModal();render();toast('💾 Enregistrement…');
+  await push('saveEvents',D().events);
+  if(services.length){
+    try{
+      const m=getMember(memberId);const r=m?ROLES[m.role]:null;
+      await postAPI('notifyEvent',{type,memberNom:m?m.nom:'—',memberRole:r?r.label:'—',matricule:m?m.matricule||'—':'—',dateDebut:evtData.dateDebut||evtData.date||'—',dateFin:evtData.dateFin||'',motif:motif||'—',statut,note:'',certifUrl:'',services});
+      toast(`📧 Notification envoyée`);
+    }catch(e){toast('⚠ Email non envoyé');}
+  }else{toast('✅ Événement sauvegardé');}
+  if(pendingCertif&&EVT[type]?.hasCertif){
+    toast('📤 Upload certificat…');
+    try{
+      const m=getMember(memberId);
+      const reader=new FileReader();
+      reader.onload=async function(e){
+        const base64=e.target.result.split(',')[1];
+        const res=await postAPI('uploadCertificat',{fileData:base64,fileName:pendingCertif.name,mimeType:pendingCertif.type,evtId:String(evtData.id),memberNom:m?m.nom:'inconnu'});
+        if(res.ok){
+          const idx=D().events.findIndex(e=>String(e.id)===String(evtData.id));
+          if(idx>-1){D().events[idx].certifUrl=res.viewUrl;}
+          await push('saveEvents',D().events);toast('✅ Certificat uploadé !');pendingCertif=null;render();
+        }else{toast('⚠ Upload: '+(res.error||'erreur'));}
+      };
+      reader.readAsDataURL(pendingCertif);
+    }catch(err){toast('⚠ Upload échoué');}
+  }
+}
+
+// MODAL PASSATION
+function mAddPassation(){
+  const today=todayISO();const isVen=new Date().getDay()===5;
+  const tournees=D().tournees.filter(t=>t.date===today);
+  const sacsRelivraison=tournees.filter(t=>t.sacsOublies&&t.sacAction==='relivraison').map(t=>{const m=getMember(t.memberId);return m?m.nom+': '+t.sacsOublies:'';}).filter(Boolean).join('\n');
+  const incidents=tournees.filter(t=>t.incident).map(t=>{const m=getMember(t.memberId);return m?m.nom+': '+t.incident:'';}).filter(Boolean).join('\n');
+  const partis=tournees.filter(t=>t.statut==='parti'||t.statut==='retour'||t.statut==='demi').length;
+  const total=D().members.filter(m=>['chauffeur','chauffeurplus'].includes(m.role)).length;
+  return`<div class="msheet"><div class="mhandle"></div>
+  <div class="mtitle">🔁 Fiche de passation</div>
+  <div class="fg"><label class="fl">Date *</label><input class="fc" id="p-date" type="date" value="${today}"/></div>
+  <div class="fg"><label class="fl">✅ Situation des départs</label><textarea class="fc" id="p-dep" placeholder="Départs OK…">${partis}/${total} chauffeurs partis</textarea></div>
+  <div class="fg"><label class="fl">⚠ Incidents du jour</label><textarea class="fc" id="p-inc" placeholder="Incidents…">${incidents}</textarea></div>
+  <div class="fg"><label class="fl">📦 Sacs relivraison J+1</label><textarea class="fc" id="p-sacs" placeholder="Sacs à relivrer demain…">${sacsRelivraison}</textarea></div>
+  <div class="fg"><label class="fl">👁 À surveiller au retour</label><textarea class="fc" id="p-surv" placeholder="Points d'attention…"></textarea></div>
+  <div class="fg"><label class="fl">📞 Consignes pour Matis</label><input class="fc" id="p-cons" placeholder="Si problème : appeler dispatcher…"/></div>
+  ${isVen?`<div class="fg" style="background:#fef3c7;border-radius:11px;padding:12px;border:1px solid #f5a623">
+    <label class="fl" style="color:#92400e">📅 Consignes samedi (Riad)</label>
+    <textarea class="fc" id="p-sam"></textarea><input type="hidden" id="p-issam" value="1"/>
+  </div>`:`<input type="hidden" id="p-issam" value="0"/>`}
+  <button class="btn btn-amber" onclick="savePassation()">✓ Enregistrer</button></div>`;
+}
+async function savePassation(){
+  const date=document.getElementById('p-date').value;if(!date){alert('Date obligatoire.');return;}
+  const issamEl=document.getElementById('p-issam');
+  D().passations.push({id:Date.now(),date,departs:document.getElementById('p-dep').value.trim(),incident:document.getElementById('p-inc').value.trim(),sacsRelivraison:document.getElementById('p-sacs').value.trim(),surveiller:document.getElementById('p-surv').value.trim(),consigne:document.getElementById('p-cons').value.trim(),estSamedi:issamEl&&issamEl.value==='1',samedi:document.getElementById('p-sam')?document.getElementById('p-sam').value.trim():''});
+  closeModal();go('passation');toast('💾 Sauvegarde…');await push('savePassations',D().passations);toast('✅ Passation sauvegardée');
+}
+
+// DELETE
+async function delMember(id){if(!confirm('Supprimer ?'))return;S.data.members=S.data.members.filter(m=>String(m.id)!==String(id));S.data.events=S.data.events.filter(e=>String(e.memberId)!==String(id));go('rh');await push('saveMembers',D().members);await push('saveEvents',D().events);toast('✅ Supprimé');}
+async function delEvt(id){if(!confirm('Supprimer ?'))return;S.data.events=S.data.events.filter(e=>String(e.id)!==String(id));render();await push('saveEvents',D().events);toast('✅ Supprimé');}
+async function delPass(id){if(!confirm('Supprimer ?'))return;S.data.passations=S.data.passations.filter(p=>String(p.id)!==String(id));render();await push('savePassations',D().passations);toast('✅ Supprimé');}
+
+// ══════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════
+(async function init(){
+  try{
+    document.getElementById('loaderMsg').textContent='Connexion à Google Sheets…';
+    const data=await apiCall({action:'getAll'});
+    if(data.error)throw new Error(data.error);
+    S.data={members:data.members||[],events:data.events||[],repos:arrToObj(data.repos||[]),passations:data.passations||[],tournees:data.tournees||[],paie:data.paie||[]};
+    localStorage.setItem('tt_cache',JSON.stringify(S.data));
+    localStorage.setItem('tt_cache_ts',Date.now());
+  }catch(e){
+    document.getElementById('loaderMsg').textContent='Hors ligne — données locales';
+    await new Promise(r=>setTimeout(r,800));loadFromCache();
+  }finally{
+    document.getElementById('loaderOv').style.display='none';
+    document.getElementById('lockScreen').style.display='flex';
+  }
+})();
+</script>
+</body>
+</html>
